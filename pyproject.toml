@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "viraltrack"
+version = "0.1.0"
+description = "ViralTrack: platform-neutral boundary around the youtube-niche-finder foundation"
+requires-python = ">=3.10"
+# Same HTTP client and Postgres driver the adopted foundation already uses.
+dependencies = [
+    "httpx>=0.27",
+    "psycopg2-binary>=2.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff==0.16.9",  # same pin as the foundation's CI
+]
+
+[tool.setuptools.packages.find]
+include = ["viraltrack*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "postgres: needs a Postgres server (VT_TEST_DATABASE_URL)",
+    "live_foundation: needs a running niche-finder API (VT_TEST_FOUNDATION_URL)",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 110
+extend-exclude = ["upstream"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

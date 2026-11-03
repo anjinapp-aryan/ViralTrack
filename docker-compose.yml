@@ -1,0 +1,34 @@
+# ViralTrack local stack.
+#
+# The YouTube foundation's own compose file is reused unchanged through
+# `include` (postgres, web, worker, mcp...). ViralTrack adds only the
+# retention service that enforces docs/phase-1/DATA_RETENTION_POLICY.md.
+#
+#   cp upstream/youtube-niche-finder/.env.example upstream/youtube-niche-finder/.env
+#   #   (put YOUTUBE_API_KEY there)
+#   cp .env.example .env
+#   docker compose up -d postgres web worker retention
+#
+# Dashboard: http://localhost:8080  (the foundation's `web` service)
+
+include:
+  - path: upstream/youtube-niche-finder/docker-compose.yml
+
+services:
+  retention:
+    build: .
+    image: viraltrack:latest
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      VT_DATABASE_URL: "postgresql://${POSTGRES_USER:-niches}:${POSTGRES_PASSWORD:-niches}@postgres:5432/${POSTGRES_DB:-niches}"
+      VT_DATABASE_SCHEMA: "${VT_DATABASE_SCHEMA:-public}"
+    # Daily: delete what the policy no longer allows to keep. Runs once at start;
+    # a failed run is retried after 10 minutes instead of waiting a day.
+    command: ["sh", "-c", "while true; do if python -m viraltrack.retention --apply; then sleep 86400; else sleep 600; fi; done"]
+    restart: unless-stopped
+    depends_on:
+      # `web` creates and migrates the schema at start; retention must not run before it.
+      web:
+        condition: service_healthy

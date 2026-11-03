@@ -1,0 +1,379 @@
+{
+ "channelId": "UC0000000000000000000f",
+ "found": true,
+ "yppEligibility": {
+  "status": "subscribers-met",
+  "subscribers": 15000,
+  "tiers": {
+   "expanded": {
+    "subscribers": true,
+    "subscribersNeeded": 500,
+    "uploads90d": {
+     "seen": 34,
+     "needed": 3,
+     "met": true
+    },
+    "shortsViews90d": {
+     "seenAtLeast": 951780,
+     "needed": 3000000,
+     "met": false
+    },
+    "watchHours": null,
+    "watchHoursNeeded": 3000
+   },
+   "full": {
+    "subscribers": true,
+    "subscribersNeeded": 1000,
+    "uploads90d": null,
+    "shortsViews90d": {
+     "seenAtLeast": 951780,
+     "needed": 10000000,
+     "met": false
+    },
+    "watchHours": null,
+    "watchHoursNeeded": 4000
+   }
+  },
+  "windowDays": 90,
+  "note": "Not a monetization status: YouTube does not publish it. Only the YPP thresholds this channel visibly meets; uploads and Shorts views are a lower bound from collected videos, watch hours are not available through the API, and meeting a threshold still needs an accepted application.",
+  "rules": "2026",
+  "upcoming": {
+   "effective": "2027-02-01",
+   "status": "subscribers-met",
+   "tiers": {
+    "expanded": {
+     "subscribers": true,
+     "subscribersNeeded": 500,
+     "uploads90d": {
+      "seen": 34,
+      "needed": 3,
+      "met": true
+     },
+     "shortsViews90d": {
+      "seenAtLeast": 951780,
+      "needed": 3000000,
+      "met": false
+     },
+     "watchHours": null,
+     "watchHoursNeeded": 3000
+    },
+    "full": {
+     "subscribers": true,
+     "subscribersNeeded": 1000,
+     "uploads90d": null,
+     "shortsViews90d": {
+      "seenAtLeast": 951780,
+      "needed": 20000000,
+      "met": false
+     },
+     "watchHours": null,
+     "watchHoursNeeded": 8000
+    }
+   },
+   "activity": {
+    "longUploads90d": 17,
+    "shortsUploads90d": 17,
+    "shortsViews90dAtLeast": 951780,
+    "met": true
+   }
+  }
+ },
+ "milestones": {
+  "subscribers": 15000,
+  "forecasts": [
+   {
+    "target": 100000,
+    "current": 15000,
+    "reached": false,
+    "sample": 3,
+    "pace30PerDay": null,
+    "eta30": null,
+    "pace90PerDay": null,
+    "eta90": null,
+    "reason": "few-snapshots"
+   },
+   {
+    "target": 1000000,
+    "current": 15000,
+    "reached": false,
+    "sample": 3,
+    "pace30PerDay": null,
+    "eta30": null,
+    "pace90PerDay": null,
+    "eta90": null,
+    "reason": "few-snapshots"
+   }
+  ],
+  "note": "Estimate of niche-finder from our own snapshots at the recent pace, not YouTube data; growth is rarely a straight line."
+ },
+ "gone": {
+  "missingSince": "2026-11-01T01:49:35.069836+00:00",
+  "confirmedAt": "2026-11-03T01:49:35.069836+00:00"
+ },
+ "profile": {
+  "title": "Cooking Shorts Co",
+  "handle": "@cookingshortsco",
+  "country": "US",
+  "subscribers": 15000,
+  "subscribersHidden": false,
+  "totalViews": 22000000,
+  "videoCount": 320,
+  "createdAt": "2021-05-17T01:49:35.069836+00:00",
+  "ageDays": 1997,
+  "topics": [
+   "Knowledge"
+  ],
+  "keywords": null,
+  "mainCategory": "Howto & Style",
+  "aiLabels": null
+ },
+ "cadence": {
+  "uploadsPerWeekLifetime": 1.122,
+  "uploadsInPeriod": 15,
+  "period": "30d",
+  "avgVideoLengthSeconds": 471,
+  "daysSinceLastUpload": 1.7,
+  "longformCount": 17,
+  "shortsCount": 17,
+  "shortsSharePercent": 50.0
+ },
+ "performance": {
+  "videosAnalysed": 34,
+  "medianViewsPerVideo": 69222,
+  "avgViewsPerVideo": 245726,
+  "viralSkew": 3.55,
+  "medianEngagementRate": 3.882,
+  "medianViewsPerSubscriber": 3.776,
+  "bestVideo": "3 ingredient dinner that actually works",
+  "shortsMedianViews": 52228,
+  "longformMedianViews": 69222
+ },
+ "growth": {
+  "24h": {
+   "subscribers": {
+    "delta": 150,
+    "per_day": 150.0,
+    "percent": 1.01,
+    "window_days_actual": 1.0
+   },
+   "views": {
+    "delta": 110000,
+    "per_day": 110000.0,
+    "percent": 0.503,
+    "window_days_actual": 1.0
+   }
+  },
+  "7d": {
+   "subscribers": {
+    "delta": 900,
+    "per_day": 30.0,
+    "percent": 6.383,
+    "window_days_actual": 30.0
+   },
+   "views": {
+    "delta": 1540000,
+    "per_day": 51333.33,
+    "percent": 7.527,
+    "window_days_actual": 30.0
+   }
+  },
+  "30d": {
+   "subscribers": {
+    "delta": 900,
+    "per_day": 30.0,
+    "percent": 6.383,
+    "window_days_actual": 30.0
+   },
+   "views": {
+    "delta": 1540000,
+    "per_day": 51333.33,
+    "percent": 7.527,
+    "window_days_actual": 30.0
+   }
+  },
+  "90d": {
+   "subscribers": null,
+   "views": null
+  }
+ },
+ "growthAvailable": true,
+ "snapshots": 3,
+ "momentum": 4.659,
+ "grade": "A+",
+ "projections": {
+  "subscribers_1y": 25950,
+  "subscribers_3y": 47850,
+  "views_1y": 40736665,
+  "model": "linear extrapolation of the 30d rate, same as Social Blade"
+ },
+ "revenue": {
+  "monthlyViewsUsed": 1539999,
+  "socialBladeRange": {
+   "low_usd": 385.0,
+   "high_usd": 6160.0,
+   "model": "Social Blade published range $0.25-$4.00 per 1000 views"
+  },
+  "nicheModel": {
+   "rpm_base": 10.0,
+   "rpm_effective": 7.0,
+   "rpm_range": {
+    "low": 3.5,
+    "mid": 7.0,
+    "high": 14.0,
+    "confidence": "low",
+    "basis": "mid = NexLev-style niche RPM x 0.7 monetisation discount; low/high = mid / x 2, because published RPM estimates for the same niche disagree by up to 7x and YouTube publishes none"
+   },
+   "monthly_usd": 10780.0,
+   "monthly_usd_low": 5390.0,
+   "monthly_usd_high": 21560.0,
+   "model": "monthly_views/1000 * niche RPM * 0.70 monetisation discount; low/high use RPM / x 2"
+  },
+  "warning": "AdSense only, ignores sponsorships; public estimates are routinely off by 200-400%"
+ },
+ "topOutliers": [
+  {
+   "videoId": "fvid021",
+   "title": "3 ingredient dinner that actually works",
+   "publishedAt": "2026-09-22T08:02:37.378931+00:00",
+   "views": 2577753,
+   "ageDays": 42.3,
+   "outlierScore": 78.09,
+   "outlierScoreRolling": 78.09,
+   "outlierScoreAgeAdjusted": 78.09,
+   "band": "mega outlier",
+   "baselineMedianViews": 33010,
+   "baselineMedianViewsPeriod": 68072,
+   "outlierScorePeriod": 37.87
+  },
+  {
+   "videoId": "fvid027",
+   "title": "3 ingredient dinner that actually works",
+   "publishedAt": "2026-09-03T08:13:38.744343+00:00",
+   "views": 180146,
+   "ageDays": 61.3,
+   "outlierScore": 5.76,
+   "outlierScoreRolling": 5.76,
+   "outlierScoreAgeAdjusted": 5.76,
+   "band": "viral",
+   "baselineMedianViews": 31302,
+   "baselineMedianViewsPeriod": 31918,
+   "outlierScorePeriod": 5.64
+  },
+  {
+   "videoId": "fvid031",
+   "title": "The pasta trick chefs hide",
+   "publishedAt": "2026-08-28T04:03:00.620850+00:00",
+   "views": 66923,
+   "ageDays": 67.5,
+   "outlierScore": 2.21,
+   "outlierScoreRolling": 2.21,
+   "outlierScoreAgeAdjusted": 2.21,
+   "band": "noteworthy",
+   "baselineMedianViews": 30228,
+   "baselineMedianViewsPeriod": 31918,
+   "outlierScorePeriod": 2.1
+  },
+  {
+   "videoId": "fvid001",
+   "title": "The pasta trick chefs hide",
+   "publishedAt": "2026-09-19T04:54:38.617015+00:00",
+   "views": 70355,
+   "ageDays": 45.4,
+   "outlierScore": 2.17,
+   "outlierScoreRolling": 2.17,
+   "outlierScoreAgeAdjusted": 2.17,
+   "band": "noteworthy",
+   "baselineMedianViews": 32464,
+   "baselineMedianViewsPeriod": 68072,
+   "outlierScorePeriod": 1.03
+  },
+  {
+   "videoId": "fvid015",
+   "title": "3 ingredient dinner that actually works",
+   "publishedAt": "2026-10-13T04:01:48.826047+00:00",
+   "views": 88226,
+   "ageDays": 21.5,
+   "outlierScore": 1.42,
+   "outlierScoreRolling": 1.42,
+   "outlierScoreAgeAdjusted": 1.55,
+   "band": "normal",
+   "baselineMedianViews": 62095,
+   "baselineMedianViewsPeriod": 69452,
+   "outlierScorePeriod": 1.27
+  },
+  {
+   "videoId": "fvid023",
+   "title": "Meal prep for a week in 20 minutes",
+   "publishedAt": "2026-10-03T12:48:09.354318+00:00",
+   "views": 76324,
+   "ageDays": 31.1,
+   "outlierScore": 1.3,
+   "outlierScoreRolling": 1.3,
+   "outlierScoreAgeAdjusted": 1.3,
+   "band": "normal",
+   "baselineMedianViews": 58834,
+   "baselineMedianViewsPeriod": 70355,
+   "outlierScorePeriod": 1.08
+  },
+  {
+   "videoId": "fvid011",
+   "title": "Meal prep for a week in 20 minutes",
+   "publishedAt": "2026-10-22T05:32:17.067027+00:00",
+   "views": 75697,
+   "ageDays": 12.4,
+   "outlierScore": 1.1,
+   "outlierScoreRolling": 1.1,
+   "outlierScoreAgeAdjusted": 1.39,
+   "band": "normal",
+   "baselineMedianViews": 68639,
+   "baselineMedianViewsPeriod": 68072,
+   "outlierScorePeriod": 1.11
+  },
+  {
+   "videoId": "fvid025",
+   "title": "The pasta trick chefs hide",
+   "publishedAt": "2026-09-02T21:51:39.086363+00:00",
+   "views": 31918,
+   "ageDays": 61.7,
+   "outlierScore": 1.04,
+   "outlierScoreRolling": 1.04,
+   "outlierScoreAgeAdjusted": 1.04,
+   "band": "normal",
+   "baselineMedianViews": 30687,
+   "baselineMedianViewsPeriod": 33010,
+   "outlierScorePeriod": 0.97
+  },
+  {
+   "videoId": "fvid033",
+   "title": "3 ingredient dinner that actually works",
+   "publishedAt": "2026-09-06T02:54:04.143017+00:00",
+   "views": 33010,
+   "ageDays": 58.5,
+   "outlierScore": 1.03,
+   "outlierScoreRolling": 1.03,
+   "outlierScoreAgeAdjusted": 1.03,
+   "band": "normal",
+   "baselineMedianViews": 31918,
+   "baselineMedianViewsPeriod": 66923,
+   "outlierScorePeriod": 0.49
+  },
+  {
+   "videoId": "fvid017",
+   "title": "Meal prep for a week in 20 minutes",
+   "publishedAt": "2026-09-25T02:17:18.528680+00:00",
+   "views": 50745,
+   "ageDays": 39.6,
+   "outlierScore": 1.02,
+   "outlierScoreRolling": 1.02,
+   "outlierScoreAgeAdjusted": 1.02,
+   "band": "normal",
+   "baselineMedianViews": 49966,
+   "baselineMedianViewsPeriod": 69337,
+   "outlierScorePeriod": 0.73
+  }
+ ],
+ "caveats": [
+  "subscriberCount is rounded to 3 significant figures by the API -- subscriber deltas are unreliable above ~100k subs",
+  "growth/velocity fields are null until enough snapshots exist (run the worker or call refresh_channels/refresh_stats)"
+ ]
+}

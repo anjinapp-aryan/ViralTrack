@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 1"   # weekly: also runs the full upstream suite
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  viraltrack:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vt
+          POSTGRES_PASSWORD: vt
+          POSTGRES_DB: vt
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U vt" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # requirements-dev.lock is `uv pip compile` output; recompiling must change
+      # nothing but comments (same check the foundation runs on its lockfile).
+      - name: Check the lockfile is current
+        run: |
+          pip install uv==0.12.15
+          uv pip compile -q pyproject.toml --extra dev --universal --python-version 3.10 -o /tmp/lock
+          diff <(grep -v '^#' requirements-dev.lock) <(grep -v '^#' /tmp/lock)
+
+      - name: Install
+        run: |
+          pip install -r requirements-dev.lock
+          pip install --no-deps -e .
+          pip check
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Check configuration (.env.example and compose file)
+        run: |
+          set -a; . ./.env.example; set +a
+          python -m viraltrack.config
+          docker compose config -q
+
+      - name: Check the foundation submodule is the pinned commit
+        run: test "$(git -C upstream/youtube-niche-finder rev-parse --short=7 HEAD)" = "d872014"
+
+      - name: Tests
+        env:
+          VT_TEST_DATABASE_URL: postgresql://vt:vt@localhost:5432/vt
+        run: pytest -q -p no:cacheprovider
+
+  # The adopted foundation's own suite, as its CI runs it (pgvector Postgres).
+  # Slow (~1,800 tests), so only weekly and on demand.
+  upstream-suite:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: niches
+          POSTGRES_USER: niches
+          POSTGRES_PASSWORD: niches
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U niches" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install foundation dependencies
+        run: pip install -r upstream/youtube-niche-finder/backend/requirements.txt pytest
+      - name: Upstream tests
+        working-directory: upstream/youtube-niche-finder/backend
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5432"
+          POSTGRES_DB: niches
+          POSTGRES_USER: niches
+          POSTGRES_PASSWORD: niches
+          NICHE_REQUIRE_PGVECTOR: "1"
+        run: pytest -q -p no:cacheprovider tests/
