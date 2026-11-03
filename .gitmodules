@@ -1,0 +1,3 @@
+[submodule "upstream/youtube-niche-finder"]
+	path = upstream/youtube-niche-finder
+	url = https://github.com/pandich93/youtube-niche-finder.git
