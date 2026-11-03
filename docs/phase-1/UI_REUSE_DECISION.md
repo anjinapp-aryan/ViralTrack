@@ -19,5 +19,10 @@ on :8080. ViralTrack has no UI of its own and builds none in Phase 1.
 | Cross-platform unified dashboard and comparison | social-dash, content-dashboard | **REFERENCE** | Layout ideas only. Needs a second legitimate platform first |
 | Provenance labels on every number ("not a YouTube metric") | upstream `/api/scores` + "?" hints | **REUSE**, then ADAPT | Upstream already explains each score. ViralTrack's model tags it in code |
 
-Decision: **the foundation's UI is ViralTrack's UI for now.** New UI work starts only when there is a
+**Phase 1.1 restriction:** the foundation's screens display RESTRICTED derived metrics (outlier scores,
+RPM and revenue, niche scores, rankings). Until Google accepts the Analytics & Reporting amendment, the
+foundation UI is **INTERNAL_ONLY**: an operator and research tool on `127.0.0.1`, never offered to end users
+(DERIVED_METRIC_POLICY.md). A user-facing ViralTrack UI must be built on the provider layer.
+
+Decision: **the foundation's UI is ViralTrack's internal UI for now.** New UI work starts only when there is a
 ViralTrack-specific feature to show: player, cross-platform view, branding.

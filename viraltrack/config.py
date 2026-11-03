@@ -22,6 +22,11 @@ LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
 YOUTUBE_DEFAULT_DAYS = 30
 YOUTUBE_AMENDMENT_STATS_DAYS = 1095
 
+# Approval id held once Google accepts the project's "Analytics & Reporting"
+# derived-metrics amendment. Gates RESTRICTED metrics (docs/phase-1/DERIVED_METRIC_POLICY.md).
+YOUTUBE_ANALYTICS_AMENDMENT = "youtube_analytics_amendment"
+DATA_ORIGINS = ("real", "demo", "test")
+
 
 def _bool(env: Mapping[str, str], key: str, default: bool) -> bool:
     raw = env.get(key)
@@ -61,6 +66,8 @@ class YouTubeProviderSettings:
     base_url: str              # the niche-finder HTTP API
     api_token: str | None      # niche-finder personal token (multi-user mode only)
     timeout_seconds: int
+    data_origin: str           # real | demo | test: what the foundation's corpus contains
+    approvals: frozenset[str]  # policy approvals this deployment holds
 
 
 @dataclass(frozen=True)
@@ -95,6 +102,8 @@ class Settings:
             "youtube.enabled": self.youtube.enabled,
             "youtube.base_url": self.youtube.base_url,
             "youtube.api_token": "set" if self.youtube.api_token else "unset",
+            "youtube.data_origin": self.youtube.data_origin,
+            "youtube.approvals": sorted(self.youtube.approvals),
             "database.url": _mask_dsn(db) if db else "unset",
             "database.schema": self.database.schema,
             "retention.youtube_amendment_accepted": self.retention.youtube_amendment_accepted,
@@ -124,14 +133,21 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     if not base_url.startswith(("http://", "https://")):
         raise ConfigError(f"VT_YOUTUBE_FOUNDATION_URL must be an http(s) URL, got {base_url!r}")
 
+    environment = _choice(env, "VT_ENV", "development", ENVIRONMENTS)
+    data_origin = _choice(env, "VT_YOUTUBE_DATA_ORIGIN", "real", DATA_ORIGINS)
+    if environment == "production" and data_origin != "real":
+        raise ConfigError("VT_YOUTUBE_DATA_ORIGIN must be 'real' when VT_ENV=production")
+
     return Settings(
-        environment=_choice(env, "VT_ENV", "development", ENVIRONMENTS),
+        environment=environment,
         log_level=_choice(env, "VT_LOG_LEVEL", "INFO", LOG_LEVELS),
         youtube=YouTubeProviderSettings(
             enabled=_bool(env, "VT_YOUTUBE_ENABLED", True),
             base_url=base_url,
             api_token=env.get("VT_YOUTUBE_FOUNDATION_TOKEN") or None,
             timeout_seconds=_int(env, "VT_YOUTUBE_TIMEOUT_SECONDS", 20, 1, 300),
+            data_origin=data_origin,
+            approvals=frozenset({YOUTUBE_ANALYTICS_AMENDMENT} if amendment else ()),
         ),
         database=DatabaseSettings(
             url=env.get("VT_DATABASE_URL") or None,

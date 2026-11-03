@@ -1,58 +1,37 @@
-# Test Results (2026-11-03)
+# Test Results
 
-## Upstream suite: youtube-niche-finder @ d872014
+## Phase 1.1 (2026-11-03, working tree on top of `355cd19`)
 
-| Run | Environment | Total | Passed | Failed | Skipped | Time |
-|---|---|---:|---:|---:|---:|---:|
-| **Phase 1 (authoritative)** | Docker, `python:3.12-slim` (Linux) + `pgvector/pgvector:pg16`, `NICHE_REQUIRE_PGVECTOR=1`, same as upstream CI | **1,786** | **1,786** | **0** | **0** | **146 s** |
-| Phase 0 (for comparison) | Windows, pgserver (Postgres 16.2, pgvector 0.6.2) | 1,786 | 1,784 | 2 | 0 | 12,908 s |
+| Suite | Environment | Passed | Failed | Skipped | Duration |
+|---|---|---:|---:|---:|---:|
+| Upstream youtube-niche-finder @ d872014 (full) | Docker `python:3.12-slim` + `pgvector/pgvector:pg16` (CI-equivalent) | **1,786** | **0** | **0** | 136 s |
+| ViralTrack, all tests (unit + provider/adapter + Postgres integration + retention + live foundation) | Windows, Python 3.12.10, pgserver Postgres 16.2, demo foundation on :3903 | **65** | **0** | **0** | 4.2 s |
+| ViralTrack, no database or foundation (plain `pytest`) | same | 57 | 0 | 8 (7 Postgres, 1 live) | 0.2 s |
+| Lint (`ruff check .`, ruff 0.16.9) | | clean | | | |
+| Docker: `docker compose up -d --build postgres web retention` | Docker Desktop 29.5.3 | postgres and web healthy; retention ran every rule, including the new Phase 1.1 ones (`own_unverified.*`, `meta.*`); none skipped | | | |
 
-The two Phase 0 failures (`test_pgvector` crowded-channel index, `test_rls_login` wrong password) do not
-occur in the CI-equivalent Linux environment, which confirms they came from the Windows/pgserver setup.
-Command: `pytest -q -p no:cacheprovider tests/` in `backend/` (3 warnings: MCP deprecation notices and an
-unknown pytest option passed by the runner).
+### New Phase 1.1 tests
 
-## ViralTrack suite
+| Area | Tests |
+|---|---|
+| Derived-metric policy | `test_restricted_metrics_never_mapped_without_approval`, `test_restricted_metrics_mapped_with_approval`, `test_internal_only_metrics_never_mapped`, `test_every_mapped_derived_field_has_a_policy_rule`, `test_every_upstream_numeric_field_is_classified`, `test_default_sort_is_by_raw_views`, `test_sorting_by_a_restricted_metric_is_refused_before_any_call`, `test_allowed_derived_sort_and_unknown_sort`, `test_shorts_filter_is_allowed_but_label_is_restricted`, `test_metric_policy_decisions`, `test_restricted_rule_must_name_its_approval`, `test_content_rejects_unexposable_metrics` ×2, `test_creator_metrics_are_checked_too` |
+| Demo / test / real | `test_demo_corpus_cannot_pass_as_real_provider_data`, `test_real_ids_accepted_as_real`, `test_demo_metric_cannot_sit_in_real_content`, `test_production_requires_real_data_origin` |
+| Provenance | `test_every_record_answers_the_provenance_questions` |
+| Security | `test_creator_id_is_encoded_in_the_path` |
+| Retention decisions | `test_phase_1_1_decisions` (own_* unverified, drafts.review, derived meta, transcripts cascade) |
+| Config | `test_amendment_flag_is_the_only_source_of_approvals` |
 
-| Run | Passed | Failed | Skipped | Time |
-|---|---:|---:|---:|---:|
-| With Postgres + live foundation (`VT_TEST_DATABASE_URL`, `VT_TEST_FOUNDATION_URL`) | **44** | **0** | **0** | 3.9 s |
-| Without either (plain `pytest`) | 37 | 0 | 7 (6 Postgres, 1 live) | 0.2 s |
-| Live smoke vs Docker foundation (empty corpus, :8090) | 1 | 0 | — | 2.3 s |
-| Live smoke vs demo-data foundation (:3903) | 1 | 0 | — | 2.3 s |
-
-Lint: `ruff check .` (ruff 0.16.9, the foundation's pin): all checks passed.
-
-### Coverage of the required integration-boundary areas
-
-| # | Area | Tests |
-|---|---|---|
-| 1 | Provider initialization | `test_registry_builds_youtube_only`, `test_token_sent_only_when_configured` |
-| 2 | Normalized content mapping | `test_discovery_maps_to_normalized_content`, `test_shorts_query_maps_short_form`, `test_search_and_creator`, `test_model_is_platform_neutral` |
-| 3 | Provider error handling | `test_unreachable_foundation`, `test_not_found_creator`, `test_bad_responses` ×4, `test_invalid_period_rejected_before_any_call` |
-| 4 | Unsupported capability | `test_unsupported_raises_and_makes_no_call` ×2, `test_audio_and_hashtags_declared_unsupported` |
-| 5 | Configuration | `tests/test_config.py` (10 cases: defaults, `.env.example`, caps, invalid values, secret masking) |
-| 6 | Data provenance | `test_raw_and_derived_provenance`, `test_history_points_carry_their_capture_time`, `test_raw_and_derived_kept_apart`, `test_derived_metric_cannot_pose_as_raw`, `test_raw_metric_cannot_pose_as_derived` |
-| 7 | Retention behaviour | `tests/test_retention_job.py` (6, on real upstream DDL), `tests/test_retention_policy.py` (3, schema contract) |
-| 8 | Persistence boundaries | `test_provider_only_reads`, `test_user_data_survives`, `test_report_mode_changes_nothing` |
-
-### Defects the tests found during Phase 1 (fixed)
-
-1. The retention "strip text" shortcut skipped `saved_items.payload` whenever the text and stats windows were
-   equal, so payloads were never stripped. Fixed with an explicit `covered_by_stats` flag.
-2. The Docker `retention` service ran before the foundation created its schema and reported "nothing to
-   delete". Fixed in two places: the service waits for a healthy `web`, and the job now fails closed when the
-   schema is missing.
-3. Foundation hints came back in Russian (`NF_DEFAULT_LOCALE=ru`). The adapter now sends `X-NF-Locale: en`.
+Defect found during Phase 1.1: none in production code beyond the path-encoding issue (fixed). One test seed
+had a primary-key collision and was fixed.
 
 ## CI
 
-`.github/workflows/ci.yml`, two jobs.
+| Commit | Run | Result |
+|---|---|---|
+| `355cd19` (your push) | GitHub Actions 41671578970 | **success**: job `viraltrack` (lockfile, install + `pip check`, lint, config, compose, pin, tests **43 passed, 1 skipped**). `upstream-suite` skipped by design (schedule/dispatch only) |
+| Phase 1.1 working tree | — | **`GITHUB_CI_NOT_YET_EXECUTED`**: not committed or pushed. Its local equivalent is above |
 
-- `viraltrack` (on every push and PR): lockfile check, install + `pip check`, ruff, config check of
-  `.env.example`, `docker compose config`, submodule-pin check, pytest with a Postgres 16 service.
-- `upstream-suite` (weekly and on demand): the foundation's full suite on `pgvector/pgvector:pg16`.
+## Phase 1 (earlier, for reference)
 
-**Status: not run on GitHub.** Nothing was pushed, as Phase 1 instructions require. Every `viraltrack` job
-step was run locally and passed: `LOCK_OK`, `pip check` compatible, ruff clean, `CONFIG_OK`, `COMPOSE_OK`,
-`PIN_OK`, 44/44 tests. The YAML parses. The `upstream-suite` job mirrors the Docker run above.
+Upstream 1,786/1,786 (Docker, 146 s); Phase 0 on Windows/pgserver 1,784/1,786 (two environment-only failures);
+ViralTrack 44/44.

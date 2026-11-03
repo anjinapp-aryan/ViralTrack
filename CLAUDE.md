@@ -81,6 +81,13 @@ If a platform does not legitimately provide something, the provider declares it 
 `UnsupportedCapability`. Never fabricate trending data, velocity, history, engagement, creator statistics or
 audio trends. An unknown value is `None`, not a guess (for example `Provenance.collected_at`).
 
+## Derived-metric exposure
+
+Derived values pass through `MetricPolicy` (`viraltrack/providers/youtube/metric_policy.py`): ALLOWED,
+RESTRICTED (needs the Google Analytics & Reporting amendment) or INTERNAL_ONLY. `Content` rejects anything not
+ALLOWED. Never expose a metric just because the foundation computes it, and never sort by a restricted one. The
+foundation's own dashboard, API and MCP are internal-only. See `docs/phase-1/DERIVED_METRIC_POLICY.md`.
+
 ## Provenance
 
 Raw provider data goes in `Content.metrics` (e.g. views, likes, comments, publishedAt). Derived data goes in

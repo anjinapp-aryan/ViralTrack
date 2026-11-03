@@ -17,6 +17,8 @@ from viraltrack.config import RetentionSettings
 from viraltrack.retention.policy import (
     AGE_RULES,
     CHANNEL_DEPENDENTS,
+    DERIVED_META_KEYS,
+    OWN_CHANNEL_DEPENDENTS,
     VIDEO_DEPENDENTS,
     Window,
 )
@@ -132,7 +134,26 @@ def run(conn, settings: RetentionSettings, schema: str = "public",
             cur.execute(f"DELETE FROM chart_snapshots WHERE snapshot_id IN ({old})", params)
             report.affected["chart_snapshots.rows"] = cur.rowcount
 
-        # 4. Row-age rules.
+        # 4. Own channels whose authorization was not re-verified within the text window.
+        if {"user_id", "channel_id", "connected_at", "last_synced_at"} <= _columns(cur, "own_channels"):
+            stale = (f"SELECT user_id, channel_id FROM own_channels "
+                     f"WHERE {_ts('COALESCE(last_synced_at, connected_at)')} < %(text)s")
+            for dep in OWN_CHANNEL_DEPENDENTS:
+                cur.execute(f"DELETE FROM {dep} WHERE (user_id, channel_id) IN ({stale})", params)
+                report.affected[f"own_unverified.{dep}"] = cur.rowcount
+            cur.execute(f"DELETE FROM own_channels WHERE (user_id, channel_id) IN ({stale})", params)
+            report.affected["own_unverified.own_channels"] = cur.rowcount
+        else:
+            report.skipped["own_unverified"] = "own_channels columns missing"
+
+        # 5. Derived aggregates kept in meta (JSON values with their own timestamp).
+        for key, field in DERIVED_META_KEYS.items():
+            stamp = rf"(CASE WHEN value ~ '^\s*\{{' THEN (value::jsonb ->> '{field}') END)"
+            cur.execute(f"DELETE FROM meta WHERE key = %(key)s AND {_ts(stamp)} < %(text)s",
+                        {**params, "key": key})
+            report.affected[f"meta.{key}"] = cur.rowcount
+
+        # 6. Row-age rules.
         for rule in AGE_RULES:
             cols = _columns(cur, rule.table)
             needed = {rule.timestamp, *rule.strip}

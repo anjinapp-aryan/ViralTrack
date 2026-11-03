@@ -80,30 +80,35 @@ TABLES: dict[str, TableRule] = {
     "gone_items": TableRule((IDN, T), Action.PURGE,
                             "Videos/channels the API stopped returning. Confirmed items have "
                             "their stored data deleted; the marker itself ages out."),
-    "meta": TableRule((T, C), Action.REVIEW,
-                      "Quota counters, schema version and short-lived caches. Keys are not "
-                      "documented upstream; audit before production."),
+    "meta": TableRule((T, D), Action.PURGE,
+                      "Operational keys (quota counters, worker status, budget blocks, digest "
+                      "marks, schema version) are kept. The fitted maturity curve and its check "
+                      "(aggregates derived from view snapshots) expire after the text window."),
     # --- the user's own channel (OAuth, Authorized Data) --------------------
-    "own_channels": TableRule((IDN, U), Action.REVIEW,
+    "own_channels": TableRule((IDN, U), Action.PURGE,
                               "Connected channel + encrypted refresh token. Authorized Data: kept "
-                              "while authorization is valid; must be re-verified every 30 days."),
-    "own_channel_daily": TableRule((R,), Action.REVIEW, "YouTube Analytics data (authorized)."),
-    "own_video_metrics": TableRule((R,), Action.REVIEW, "YouTube Analytics data (authorized)."),
+                              "while the daily sync proves the token still refreshes; deleted with "
+                              "its analytics once no sync succeeded for 30 days."),
+    "own_channel_daily": TableRule((R,), Action.CASCADE, "YouTube Analytics data (authorized)."),
+    "own_video_metrics": TableRule((R,), Action.CASCADE, "YouTube Analytics data (authorized)."),
     "own_oauth_pending": TableRule((T,), Action.KEEP, "Expiring OAuth state, upstream cleans it."),
     # --- user content -------------------------------------------------------
     "saved_items": TableRule((U, R), Action.PURGE,
                              "The user's saved item is kept; the metrics `payload` snapshot is "
                              "removed after the text window."),
-    "drafts": TableRule((U,), Action.REVIEW,
-                        "User drafts; `review` holds a snapshot of corpus statistics."),
+    "drafts": TableRule((U, D), Action.PURGE,
+                        "The user's draft is kept; the `review` snapshot of corpus statistics "
+                        "is removed after the text window."),
     "tracked_channels": TableRule((U, IDN), Action.KEEP, "The user's watchlist (channel ids)."),
     "niches": TableRule((U,), Action.KEEP, "User-defined niche queries."),
     "user_topics": TableRule((U,), Action.KEEP, "Topics the user watches."),
     "cost_profiles": TableRule((U,), Action.KEEP, "User cost settings."),
     "transcript_requests": TableRule((U,), Action.KEEP, "User requests for transcripts."),
     "transcripts": TableRule((U,), Action.REVIEW,
-                             "Transcripts pasted by the user from YouTube's UI (not API data)."),
-    "transcript_chunks": TableRule((U, D), Action.REVIEW, "Chunks + embeddings of transcripts."),
+                             "Transcripts pasted by the user from YouTube's UI (not API data). "
+                             "Legal review required; meanwhile deleted with their video."),
+    "transcript_chunks": TableRule((U, D), Action.REVIEW,
+                                   "Chunks + embeddings of transcripts; deleted with their video."),
     # --- accounts, billing, operations (not provider data) ------------------
     "users": TableRule((U,), Action.KEEP, "Accounts."),
     "email_tokens": TableRule((T,), Action.KEEP, "Expiring e-mail tokens."),
@@ -129,8 +134,15 @@ TABLES: dict[str, TableRule] = {
 # Tables holding one row (or more) per video / channel, deleted with it.
 VIDEO_DEPENDENTS = ("video_niches", "video_stats_history", "chart_entries", "video_changes",
                     "video_tags", "video_insights", "thumbnail_archive", "video_sponsors",
-                    "sponsor_scan")
+                    "sponsor_scan", "transcripts", "transcript_chunks")
 CHANNEL_DEPENDENTS = ("channel_stats_history",)
+
+# meta keys holding values derived from provider data, and the JSON field with their time.
+DERIVED_META_KEYS = {"maturity_curve": "calibratedAt", "maturity_curve_check": "checkedAt"}
+
+# Authorized Data (YouTube Analytics via OAuth) must be deleted when the token can no
+# longer be refreshed; a successful daily sync is the proof it still can.
+OWN_CHANNEL_DEPENDENTS = ("own_video_metrics", "own_channel_daily")
 
 
 @dataclass(frozen=True)
@@ -164,5 +176,7 @@ AGE_RULES: tuple[AgeRule, ...] = (
     AgeRule("alert_deliveries.rows", "alert_deliveries", "sent_at", Window.TEXT),
     AgeRule("saved_items.payload", "saved_items", "created_at", Window.TEXT,
             strip=("payload",), where="payload IS NOT NULL"),
+    AgeRule("drafts.review", "drafts", "created_at", Window.TEXT,
+            strip=("review",), where="review IS NOT NULL"),
     AgeRule("gone_items.rows", "gone_items", "last_missing_at", Window.TEXT),
 )

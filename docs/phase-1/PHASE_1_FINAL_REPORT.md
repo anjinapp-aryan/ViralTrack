@@ -1,139 +1,123 @@
-# VIRALTRACK — PHASE 1 FINAL REPORT
+# VIRALTRACK — PHASE 1 FINAL REPORT (after Phase 1.1 hardening)
 
-Date: 2026-11-03. Nothing committed or pushed; waiting for approval.
+Date: 2026-11-03. Phase 1 was committed and pushed by the owner (`aba23d6`, `355cd19`). The Phase 1.1 changes
+are in the working tree: **not committed, not pushed**.
 
-## 1. Foundation adopted
+## Foundation
 
-`pandich93/youtube-niche-finder` at commit `d872014` (MIT), included **unmodified** as the git submodule
-`upstream/youtube-niche-finder`.
+`pandich93/youtube-niche-finder` @ `d872014` (MIT), an unmodified git submodule at `upstream/youtube-niche-finder`.
+Verified clean.
 
-## 2. Adoption strategy
+## Adoption
 
-**Compose (Option E) with an adapter.** It is not a fork (no upstream code changed), not vendored (no files
-copied), not a library dependency (upstream is not a package) and not an extraction (that would be a rewrite).
-The foundation runs as a service. ViralTrack reaches it through an adapter over its documented HTTP API, and
-the retention job uses its database. This keeps upstream upgradable and the ViralTrack domain
-platform-neutral. Details: FOUNDATION_ADOPTION_DECISION.md.
+Composition (Option E). The foundation runs as a service. ViralTrack uses an adapter over its documented HTTP
+API, and its retention job uses the foundation's database. No upstream code is copied or modified.
+See FOUNDATION_ADOPTION_DECISION.md.
 
-## 3. Reused functionality (unchanged, from the foundation)
+## Architecture
 
-- YouTube collection: `search.list`, `videos.list`, `videos.batchGetStats`, `channels.list`,
-  `playlistItems.list`, quota guardrails, worker scheduling.
-- Postgres + pgvector schema, migrations and stats snapshots.
-- Outlier, velocity, acceleration and trend metrics, niches and keyword momentum.
-- Dashboard (31 screens), saved items with folders, watchlist, alerts (dashboard, Telegram, e-mail), MCP server.
-- Multi-user auth, sessions, API tokens, 2FA, Prometheus `/metrics`, structured access logs.
-- docker-compose stack (postgres, web, worker, mcp) and CI patterns: ruff pin, lockfile check, pgvector service.
+```text
+ViralTrack domain (Content/Creator/Metric/Provenance, DataOrigin, Exposure, MetricPolicy)
+  -> PlatformProvider + PlatformCapabilities (registry)
+      -> YouTube adapter: GET-only, documented no-quota endpoints, policy-gated mapping and sorting
+          -> niche-finder (submodule) -> YouTube Data API
+Retention job (daily, Docker) -> niche-finder Postgres
+```
 
-## 4. New ViralTrack code (≈1,220 lines + 540 lines of tests), each with a reason
+The read-only review (FINAL_ARCHITECTURE_REVIEW.md) passes every area. Open: the foundation UI is
+INTERNAL_ONLY, and `collected_at` is unknown for list items.
 
-| Code | Why it exists |
-|---|---|
-| `viraltrack/domain` (model, capabilities, errors) | The foundation's model is YouTube-specific. The product needs a platform-neutral model with provenance |
-| `viraltrack/providers/base.py`, `registry.py` | Provider boundary, so Instagram/TikTok can be added and YouTube replaced |
-| `viraltrack/providers/youtube` | Adapter from the foundation's HTTP API to the normalized model |
-| `viraltrack/retention` | B-6: upstream deliberately deletes nothing, and YouTube policy requires deletion |
-| `viraltrack/config.py`, `.env.example` | One validated, secret-masking configuration |
-| `docker-compose.yml`, `Dockerfile` | Includes the upstream compose unchanged and adds the `retention` service |
-| `.github/workflows/ci.yml`, `requirements-dev.lock` | CI for the boundary and a weekly run of the upstream suite |
-| `THIRD_PARTY_NOTICES.md`, `README.md` | Attribution and entry point |
-
-## 5. Architecture
-
-Platform layer (providers) → normalized model → persistence (the foundation's Postgres) + retention job.
-Intelligence is Phase 2+. See ARCHITECTURE.md.
-
-## 6. Provider abstraction
-
-`PlatformProvider` with declared `PlatformCapabilities`. Unsupported operations raise `UnsupportedCapability`
-and make no network call. A future Instagram provider (official Graph API: known professional accounts and
-limited hashtag search) implements the same class and registers in `registry.py`. TikTok waits for a
-legitimate source. See PROVIDER_BOUNDARY.md.
-
-## 7. Data model
-
-`Content` / `Creator` / `Metric` / `Provenance`. Raw metrics (`source=youtube-data-api`) and derived
-metrics (`source=niche-finder`) live in separate fields, and the model rejects mixing them. Collection time
-is `None` when the foundation does not report it, never invented. See DATA_MODEL.md.
-
-## 8. Data retention
+## Retention
 
 **B-6: PARTIALLY RESOLVED.**
 
-- Resolved: every upstream table is classified. A daily retention job enforces 30 days (or 36 months for
-  statistics with an accepted amendment, with text still at 30 days). It deletes data for videos YouTube
-  stopped returning and fails closed on a missing schema. It is tested on the real upstream DDL and runs in
-  Docker.
-- Not resolved: (a) the foundation still computes and displays derived metrics (outlier scores, revenue
-  estimates, niche scores), which need Google's Analytics & Reporting amendment; (b) REVIEW tables `meta`,
-  `own_*`, `drafts`, `transcripts*`; (c) identifier storage rule not located; (d) deployments must run the
-  retention service. See DATA_RETENTION_POLICY.md.
+- Every upstream table is classified, and the four open groups are decided:
+  - `meta`: keep with retention; the derived curve expires after 30 days.
+  - `own_*`: keep with retention; deleted 30 days after the last successful sync.
+  - `drafts`: keep; `review` stripped after 30 days.
+  - `transcripts`: **REVIEW REQUIRED** (legal); meanwhile deleted with their video.
+- All are implemented, tested on the real DDL, and run in Docker.
+- Remaining: Google approval for derived metrics, the transcripts legal question, the identifier rule, and
+  deployments must run the retention service.
 
-## 9. License
+## Derived metrics
 
-- Upstream: MIT, notice kept (submodule `LICENSE` + `THIRD_PARTY_NOTICES.md`, verified byte-identical).
-- Dependencies: permissive, plus LGPL psycopg2-binary and MPL certifi/tqdm, all unmodified. Model weights
-  Apache-2.0 / MIT.
-- Open items: `py_rust_stemmers` metadata, and **ViralTrack has no license of its own**.
-- Files copied or adapted from upstream: none (only synthetic JSON fixtures recorded from its demo seed).
-- Upstream modifications: none.
+Enforced policy boundary (DERIVED_METRIC_POLICY.md):
 
-## 10. Local execution
+- **6 ALLOWED** (simple arithmetic): engagement rate, views per hour (lifetime / 24 h), views gained 24 h,
+  acceleration, views per follower. Two of them are flagged for review.
+- **8 RESTRICTED** until the amendment is accepted:
+  - outlier scores (3 variants) and the outlier band
+  - viral score
+  - 30-day projection
+  - RPM
+  - the Shorts label
+- **2 INTERNAL_ONLY**.
+- Restricted values cannot enter `Content`. Allow-list mapping, a policy check, a model invariant and a sort
+  gate all enforce this, and contract tests cover new upstream fields.
+- **Not coverable by ViralTrack:** the foundation's own dashboard, API and MCP. They are INTERNAL_ONLY
+  (localhost) and must not reach end users.
 
-- Docker: `docker compose build web retention` (47 s); `postgres` and `web` healthy, `/api/health` ok,
-  `retention` applied.
-- Without Docker: foundation on demo data. The adapter discovered, searched, and read creator and history.
-  The retention report found 9 deletable rows.
-- **No live YouTube data**: no API key on this machine, so `worker` and collection were not run.
+## License
 
-## 11. Tests
+- ViralTrack: **no license yet. The owner must decide.** Recommendation in VIRALTRACK_LICENSE_DECISION.md:
+  proprietary + private repository for a commercial SaaS, or Apache-2.0 if open source. The repository is
+  public today.
+- Upstream: MIT, notice kept.
 
-Upstream (Linux Docker, pgvector, CI-equivalent):
+## Dependencies
 
-```text
-Passed: 1786
-Failed: 0
-Skipped: 0
-(146 s)
-```
+- Final classification (OPEN_SOURCE_ADOPTION_AUDIT.md): nothing BLOCKED.
+- NOTICE REQUIRED on distribution: MIT foundation, LGPL psycopg2-binary, MPL certifi/tqdm,
+  Apache-2.0 MiniLM weights, the Debian-based `python:3.12-slim`.
+- `py_rust_stemmers` resolved: MIT (plus permissive Rust crates).
 
-ViralTrack (with Postgres + live foundation):
+## Real-data validation
 
-```text
-Passed: 44
-Failed: 0
-Skipped: 0
-```
+**`REAL_DATA_VALIDATION_BLOCKED — YOUTUBE_API_KEY_NOT_CONFIGURED`**. No key in any environment scope or
+`.env`, and nothing was invented. Validated against the foundation's demo corpus instead: normalization,
+provenance, capabilities, errors, the policy, the demo-as-real guard and retention. The minimum-call plan is in
+REAL_DATA_VALIDATION.md.
 
-Without a database: 37 passed, 7 skipped.
+## Tests
 
-## 12. CI
+- **Upstream:** Passed 1,786 · Failed 0 · Skipped 0 · 136 s (Linux Docker, pgvector).
+- **ViralTrack (all):** Passed 65 · Failed 0 · Skipped 0 · 4.2 s.
+- **ViralTrack (no database):** Passed 57 · Skipped 8.
+- **Lint:** clean.
 
-Workflow written. **Not run on GitHub (nothing pushed).** Every step ran locally and passed.
+## CI
 
-## 13. UI reuse
+- GitHub Actions run 41671578970 on `355cd19`: **success** (43 passed, 1 skipped; upstream suite skipped by
+  design).
+- Phase 1.1 changes: **`GITHUB_CI_NOT_YET_EXECUTED`** (not pushed).
 
-The foundation's dashboard is REUSED as ViralTrack's UI. Branding and default language: ADAPT (later /
-configuration). Player: BUILD later. Unified cross-platform dashboard: REFERENCE (social-dash,
-content-dashboard). See UI_REUSE_DECISION.md.
-
-## 14. Remaining blockers
+## Remaining blockers
 
 | # | Blocker | Severity |
 |---|---|---|
-| 1 | No YouTube API key yet, so no real-data validation | HIGH |
-| 2 | Google Analytics & Reporting amendment not filed; upstream shows derived metrics (B-6 remainder) | CRITICAL for production |
-| 3 | REVIEW tables in the retention policy (`meta`, `own_*`, `drafts`, `transcripts*`) | MEDIUM |
-| 4 | CI not yet run on GitHub | MEDIUM |
-| 5 | ViralTrack has no license; `py_rust_stemmers` metadata | MEDIUM |
-| 6 | Upstream defaults to Russian; must set `NF_DEFAULT_LOCALE=en` | LOW |
-| 7 | Upstream exposes no per-item fetch time and no single-video endpoint | LOW |
-| 8 | Instagram (official API only, limited), TikTok and trending audio unavailable (Phase 0 B-3, B-4, B-7, B-13) | CRITICAL for those features |
-| 9 | One-author upstream (bus factor) | MEDIUM |
+| 1 | No YouTube API key: real-data validation blocked | HIGH |
+| 2 | Analytics & Reporting amendment not filed; 8 metrics RESTRICTED; foundation UI internal-only | CRITICAL for production / user-facing UI |
+| 3 | ViralTrack license undecided while the repository is public | HIGH (owner decision) |
+| 4 | Transcripts: legal review | MEDIUM |
+| 5 | Review of `acceleration`, `views_per_follower` and the Shorts label classification | MEDIUM |
+| 6 | Phase 1.1 not yet run in GitHub CI | LOW |
+| 7 | `collected_at` unknown for list items (needs an upstream change) | LOW |
+| 8 | Instagram, TikTok and audio unavailable (Phase 0) | CRITICAL for those features, not for Phase 2 YouTube work |
+| 9 | Single-author upstream | MEDIUM |
 
-## 15. Phase 2 readiness
+## Final gate
 
-**READY WITH LIMITATIONS.** The boundary, model, provenance, retention and tests are in place, and the
-foundation runs locally with its full suite green. Phase 2 cannot validate anything against real YouTube
-data until a key exists. It should not ship derived metrics to users until the Google amendment is filed
-and accepted.
+**READY_FOR_PHASE_2_WITH_LIMITATIONS**
+
+Evidence:
+
+- The foundation is unmodified and fully green.
+- The boundary, provenance, origin, retention and derived-metric policy are enforced and tested (65/65), and
+  CI passed on GitHub for the pushed Phase 1.
+- Phase 2 may build on the ALLOWED metric set and the provider layer.
+
+Limits:
+
+- It may not show RESTRICTED metrics to users, nor offer the foundation UI to users, before the amendment.
+- It cannot claim real-data quality until a YouTube key is configured and REAL_DATA_VALIDATION.md is completed.

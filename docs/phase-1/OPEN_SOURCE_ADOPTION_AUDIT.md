@@ -23,7 +23,7 @@ Scanned with `pip-licenses` in Phase 0 at the same commit (d872014), so the resu
 | psycopg2-binary | LGPL-3.0 (+ exception) | OK as an unmodified library | The binary wheel bundles libpq (PostgreSQL License) and OpenSSL. Not modified, dynamically used. |
 | certifi | MPL-2.0 | OK unmodified | |
 | tqdm | MPL-2.0 AND MIT | OK unmodified | |
-| py_rust_stemmers (via fastembed) | Wheel metadata UNKNOWN | **UNRESOLVED** (low risk) | Upstream repository states MIT; the wheel does not declare it. Confirm before distributing images. |
+| py_rust_stemmers 0.1.8 (via fastembed) | MIT (resolved in Phase 1.1) | OK | The wheel ships `licenses/LICENSE` (MIT (c) 2024 qdrant) but no `License` metadata field, so scanners report UNKNOWN. Its CycloneDX SBOM lists 24 bundled Rust crates: MIT OR Apache-2.0, MIT OR BSD-3-Clause, Apache-2.0 WITH LLVM-exception, Unicode-3.0 |
 
 ## Machine-learning model weights (downloaded at runtime, not in git)
 
@@ -70,8 +70,32 @@ Scanned with `pip-licenses` in Phase 0 at the same commit (d872014), so the resu
 None. ViralTrack code calls upstream; it contains no upstream source. The only upstream-derived files are
 synthetic JSON test fixtures (recorded API output of the MIT demo seed).
 
+## Final classification (Phase 1.1)
+
+Obligations below apply when ViralTrack **distributes** software (e.g. publishes Docker images or ships
+installers). Running a hosted service is not distribution under these licenses. AGPL would differ, but none is
+present.
+
+| Component | License | Class | Obligation / note |
+|---|---|---|---|
+| youtube-niche-finder @ d872014 | MIT | **NOTICE REQUIRED** | Keep the copyright and permission notice (done: submodule `LICENSE` + `THIRD_PARTY_NOTICES.md`) |
+| httpx, httpcore, anyio, idna, h11, typing_extensions, pytest, ruff, pluggy, iniconfig, packaging, Pygments, colorama | BSD / MIT / Apache-2.0 / PSF | **CLEAR** | Keep their notices in redistributed packages (pip does) |
+| psycopg2-binary 2.9.13 | LGPL-3.0 with exceptions (wheel bundles libpq, OpenSSL) | **NOTICE REQUIRED** | Used unmodified as a separate module. On distribution: include the LGPL text, point to source, and allow replacing the library. Not a reason to remove it |
+| certifi 2026.10.23 | MPL-2.0 | **NOTICE REQUIRED** | File-level copyleft, unmodified. Keep the notice and make its source available on distribution |
+| tqdm 4.70.1 | MPL-2.0 AND MIT | **NOTICE REQUIRED** | As certifi |
+| numpy, pillow, onnxruntime, tokenizers, fastembed, the rest of the 79 foundation packages | BSD / MIT / MIT-CMU / Apache-2.0 / Zlib / CC0 / 0BSD | **CLEAR** | |
+| py_rust_stemmers 0.1.8 | MIT (+ permissive crates) | **CLEAR** | Resolved above |
+| paraphrase-multilingual-MiniLM-L12-v2 (weights) | Apache-2.0 | **NOTICE REQUIRED** | Only if ViralTrack redistributes the weights. Today they are downloaded at runtime |
+| clip-ViT-B-32 vision/text (weights) | MIT | **CLEAR** | Same |
+| python:3.12-slim | PSF + Debian packages (includes GPL components) | **NOTICE REQUIRED** | Publishing an image built on it means offering corresponding source for its GPL packages (standard Debian practice) |
+| pgvector/pgvector:pg16 | PostgreSQL License | **CLEAR** | |
+| caddy:2-alpine / ollama:latest | Apache-2.0 / MIT | **CLEAR** | Profile services, not started. Pin ollama before use |
+| Upstream screenshots (`assets/*.jpg`) | MIT as files; may depict third-party YouTube content | **REVIEW REQUIRED** if reused | Not reused |
+| pgserver | Not a project dependency | n/a | Used only by the local test sandbox, never shipped |
+
+**Nothing is BLOCKED.**
+
 ## Unresolved
 
-1. `py_rust_stemmers` license metadata (low risk).
-2. **ViralTrack itself has no license.** The owner must choose one before the repository is distributed further.
-   It is public on GitHub, so currently "all rights reserved".
+1. ~~`py_rust_stemmers` license metadata~~: resolved (MIT).
+2. **ViralTrack itself has no license.** Recommendation and the owner question: VIRALTRACK_LICENSE_DECISION.md.

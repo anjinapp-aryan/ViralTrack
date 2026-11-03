@@ -1,7 +1,21 @@
 # Data Retention Policy (B-6)
 
-**B-6 status: PARTIALLY RESOLVED.** Storage retention is now enforced and tested. Open items are listed at the
-end, under "What is NOT resolved".
+**B-6 status: PARTIALLY RESOLVED** (Phase 1.1). Storage retention is enforced and tested for every table,
+and the four groups that were left open in Phase 1 now have decisions (next section). Two things remain
+open: Google's approval for derived metrics, which is a policy question handled in DERIVED_METRIC_POLICY.md,
+and one legal question about transcripts.
+
+## Phase 1.1 decisions on the four open groups
+
+| Group | Tables | Purpose and data | Raw/derived | Why ViralTrack needs it | Recomputable | Retention / deletion requirement | Compliance risk | **Decision** |
+|---|---|---|---|---|---|---|---|---|
+| 1. Foundation metadata | `meta` | Quota counters (`yt_units_<day>`, `search_calls_<day>`, per-user), worker status (`worker_last_*`, `worker_step_*`), budget blocks, digest send marks, `schema_version`; **`maturity_curve` and `maturity_curve_check`**: a curve fitted from view snapshots (JSON with `calibratedAt` / `checkedAt`) | Operational keys: neither raw nor derived. Curve: DERIVED aggregate | Quota guardrails and scheduling; the curve feeds age-adjusted scores, which are RESTRICTED | Curve: yes, refitted by the worker. Counters: n/a | Derived data stored past 30 days without approval is not allowed. Upstream keeps the last passing curve forever | Operational: none. Curve: MEDIUM | **KEEP WITH RETENTION**: operational keys kept; the curve and its check are deleted 30 days after their own timestamp |
+| 2. The user's own channel (Authorized Data, OAuth) | `own_channels`, `own_channel_daily`, `own_video_metrics` (`own_oauth_pending` is upstream-managed) | Encrypted refresh token, YouTube Analytics views, watch time, revenue, CPM | RAW (authorized) | The "your channel next to the niche" feature | Yes, by re-sync while authorized | Authorized Data may be kept while the authorization is valid. Policy: delete data of users whose tokens cannot be refreshed. Upstream only records `last_error` and keeps everything | HIGH if kept after revocation | **KEEP WITH RETENTION**: kept while the daily sync succeeds; deleted (token, daily and video metrics) once no sync has succeeded for 30 days (`last_synced_at`, or `connected_at` when it never synced) |
+| 3. Drafts | `drafts` | The user's draft title, description and tags; `review` = a JSON snapshot of corpus signals at save time | USER + DERIVED snapshot | Metadata review and outcome tracking | `review`: yes (re-run the review) | User text has no platform limit. The snapshot carries corpus statistics | LOW | **KEEP WITH RETENTION**: draft kept; `review` stripped after 30 days |
+| 4. Transcripts | `transcripts`, `transcript_chunks` | Transcript text the user pasted from YouTube's UI, plus chunk embeddings | USER (+ DERIVED embeddings). Not API data | Hook scores and transcript search | Re-paste only | YouTube API policy does not govern pasted text. The creator's copyright and YouTube's ToS on copying may apply | Legal question | **REVIEW REQUIRED** (legal). Interim safeguard: deleted together with their video (stale, gone, or not refreshed) |
+
+All four are implemented in `viraltrack/retention` and covered by `test_phase_1_1_decisions`, which runs on the
+real upstream DDL.
 
 ## The rule being enforced
 
@@ -82,14 +96,14 @@ not provider data · **REVIEW** = kept, open question.
 |---|---|---|---|
 | saved_items | USER + RAW | **PURGE payload only** | The saved item (id, folder, note) is kept. The metrics snapshot `payload` is removed after 30 d |
 | tracked_channels, niches, user_topics, cost_profiles, transcript_requests | USER (+ IDENTIFIER) | KEEP | The user's own choices |
-| drafts | USER | **REVIEW** | `review` holds a snapshot of corpus statistics |
-| transcripts, transcript_chunks | USER (+ DERIVED embeddings) | **REVIEW** | Pasted by the user from YouTube's UI, not API data. Still YouTube content |
+| drafts | USER | **PURGE `review` only** | Draft kept; `review` snapshot removed after 30 d (Phase 1.1) |
+| transcripts, transcript_chunks | USER (+ DERIVED embeddings) | **REVIEW REQUIRED** + CASCADE | Pasted by the user from YouTube's UI, not API data. Deleted with their video (Phase 1.1) |
 
 ### The user's own channel (Authorized Data, OAuth)
 
 | Table | Action | Note |
 |---|---|---|
-| own_channels, own_channel_daily, own_video_metrics | **REVIEW** | Authorized Data may be kept while the authorization is valid, but must be re-verified every 30 days. Upstream behaviour on token revocation is not yet audited |
+| own_channels, own_channel_daily, own_video_metrics | **PURGE when unverified** | Kept while the daily sync succeeds; deleted with the token once no sync has succeeded for 30 days (Phase 1.1). Upstream keeps them after token failures |
 | own_oauth_pending | KEEP | Expiring state |
 
 ### Not provider data (accounts, billing, operations)
@@ -97,7 +111,7 @@ not provider data · **REVIEW** = kept, open question.
 users, email_tokens, audit_log (upstream `NF_AUDIT_RETENTION_DAYS`, default 180), sessions, login_attempts,
 user_settings, user_prefs, api_tokens, event_reads, plans, user_plans, plan_changes, manual_runs, llm_usage,
 llm_reservations, user_totp, user_backup_codes, mfa_challenges, nf_rls_key: **KEEP**. `meta` (quota counters,
-schema version, short caches): **REVIEW**, because its keys are undocumented upstream.
+schema version) are kept; the derived `maturity_curve` / `maturity_curve_check` expire after 30 days (Phase 1.1).
 
 Caches outside Postgres: none found. Models live on the `models` volume, and those are model weights, not
 API data.
@@ -115,13 +129,12 @@ API data.
 
 ## What is NOT resolved
 
-1. **Derived metrics are a policy question, not a storage one.** Upstream computes and displays outlier
-   scores, revenue estimates, niche scores and channel comparisons. Without Google's acceptance of the
-   Analytics & Reporting amendment, the guide says not to create derived metrics beyond simple arithmetic. The
-   retention job cannot fix this. **Action: file the API Compliance Audit with the amendment before production
-   use.**
-2. REVIEW tables: `meta`, `own_*`, `drafts`, `transcripts*`.
+1. **Derived metrics are a policy question, not a storage one.** The foundation still computes and shows
+   restricted metrics on its own dashboard, API and MCP server. ViralTrack's provider layer now blocks them
+   (DERIVED_METRIC_POLICY.md), and the foundation's UI is limited to internal use. **Action: file the API
+   Compliance Audit with the amendment before production use.**
+2. Transcripts: legal review (above).
 3. Identifiers: policy text on storing bare video/channel ids was not located. ViralTrack keeps ids only where
-   the user keeps them (watchlist, saved items).
+   the user keeps them (watchlist, saved items, draft links).
 4. Deployments must run the `retention` service (or `python -m viraltrack.retention --apply` daily).
    Running the foundation's compose file alone re-creates the unsafe behaviour.

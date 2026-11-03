@@ -5,12 +5,17 @@ Every number that came from outside ViralTrack is a `Metric` carrying its
 was collected, and whether it is raw platform data or derived by software.
 Raw and derived metrics live in separate collections so they cannot be mixed
 up when displayed or stored.
+
+Every record also says whether it is real provider data or demo/test data, and
+`Content` only accepts metrics whose exposure is ALLOWED (see metric_policy).
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+
+from viraltrack.domain.metric_policy import Exposure
 
 
 class Platform(str, Enum):
@@ -25,6 +30,12 @@ class ContentType(str, Enum):
     UNKNOWN = "unknown"
 
 
+class DataOrigin(str, Enum):
+    REAL_PROVIDER_DATA = "real_provider_data"  # read from a platform through a provider
+    DEMO = "demo"                              # synthetic demo corpus (e.g. niche-finder seed_demo)
+    TEST = "test"                              # test fixtures
+
+
 class MetricKind(str, Enum):
     RAW = "raw"          # returned by the platform API as-is
     DERIVED = "derived"  # calculated by software from raw data
@@ -36,6 +47,9 @@ class Provenance:
     source: str              # who produced the value, e.g. "youtube-data-api", "niche-finder"
     collected_at: datetime | None  # when the provider last read it; None = unknown
     kind: MetricKind
+    origin: DataOrigin
+    adapter: str             # which ViralTrack adapter produced it, e.g. "youtube/niche-finder-http"
+    exposure: Exposure       # ALLOWED, or the reason it may not be shown
     note: str | None = None  # formula or caveat, shown to users for derived values
 
 
@@ -64,6 +78,7 @@ class Content:
     content_type: ContentType
     url: str
     creator: Creator
+    origin: DataOrigin
     title: str | None = None
     thumbnail_url: str | None = None
     published_at: datetime | None = None
@@ -78,6 +93,15 @@ class Content:
     provider: str = ""
 
     def __post_init__(self):
+        everything = list(self.metrics + self.derived)
+        everything += [m for m in (self.creator.followers, self.creator.content_count) if m]
+        for m in everything:
+            if m.provenance.exposure is not Exposure.ALLOWED:
+                raise ValueError(f"metric {m.name!r} is {m.provenance.exposure.value}; "
+                                 "it cannot be part of user-facing content")
+            if m.provenance.origin is not self.origin:
+                raise ValueError(f"metric {m.name!r} origin {m.provenance.origin.value} "
+                                 f"differs from content origin {self.origin.value}")
         for m in self.metrics:
             if m.provenance.kind is not MetricKind.RAW:
                 raise ValueError(f"metric {m.name!r} is not raw; put it in `derived`")

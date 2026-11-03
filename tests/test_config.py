@@ -66,3 +66,15 @@ def test_describe_masks_secrets():
     text = str(s.describe())
     assert "tok-secret" not in text and "pw-secret" not in text
     assert "db:5432/niches" in text
+
+
+def test_production_requires_real_data_origin():
+    with pytest.raises(ConfigError, match="real"):
+        load_settings({"VT_ENV": "production", "VT_YOUTUBE_DATA_ORIGIN": "demo"})
+    assert load_settings({"VT_ENV": "production"}).youtube.data_origin == "real"
+
+
+def test_amendment_flag_is_the_only_source_of_approvals():
+    assert load_settings({}).youtube.approvals == frozenset()
+    s = load_settings({"VT_YOUTUBE_ANALYTICS_AMENDMENT_ACCEPTED": "true"})
+    assert s.youtube.approvals == {"youtube_analytics_amendment"}

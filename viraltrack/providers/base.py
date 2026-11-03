@@ -31,6 +31,9 @@ class DiscoveryQuery:
     niche: str | None = None
     max_creator_followers: int | None = None
     min_views: int | None = None
+    # ViralTrack metric to order by ("views", "published_at" or a derived metric name).
+    # Ordering by a metric the policy does not allow raises RestrictedMetric.
+    sort: str = "views"
 
 
 @dataclass(frozen=True)
@@ -40,6 +43,7 @@ class SearchQuery:
     limit: int = 30
     short_form: bool | None = None
     niche: str | None = None
+    sort: str = "views"   # ignored by providers that order text searches by relevance
 
 
 @dataclass(frozen=True)
