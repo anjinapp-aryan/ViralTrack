@@ -164,4 +164,17 @@ def test_phase_1_1_decisions(pg_schema):
         ("new", '{"n": 2}'), ("old", None)]
     assert sorted(r[0] for r in rows(conn, f"SELECT key FROM {s}.meta")) == [
         "maturity_curve_check", "yt_units_2026-01-01"]
+    # transcripts are not approved for storage: all of them go (Phase 1.2)
+    assert rows(conn, f"SELECT video_id FROM {s}.transcripts") == []
+
+
+def test_transcripts_after_approval_follow_their_video(pg_schema):
+    conn, s = pg_schema
+    seed(conn)
+    with conn.cursor() as cur:
+        cur.execute("INSERT INTO transcripts (video_id, text) VALUES ('stale', 't'), ('fresh', 't')")
+        cur.execute("INSERT INTO transcript_requests (video_id, status) VALUES ('fresh', 'ready')")
+    conn.commit()
+    run(conn, settings(VT_TRANSCRIPTS_APPROVED="true"), schema=s, now=NOW, apply=True)
     assert [r[0] for r in rows(conn, f"SELECT video_id FROM {s}.transcripts")] == ["fresh"]
+    assert count(conn, f"SELECT count(*) FROM {s}.transcript_requests") == 1

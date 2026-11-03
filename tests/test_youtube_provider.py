@@ -222,6 +222,23 @@ def test_sorting_by_a_restricted_metric_is_refused_before_any_call():
     assert rec.requests[-1].url.params["sort_by"] == "outlier"
 
 
+# The only query parameters the adapter may send. Anything that filters or ranks by a
+# restricted score (min_outlier_score, preset, sort_by=viral/outlier) is absent.
+SENT_PARAMS = {"period", "sort_by", "limit", "region", "niche", "max_subscribers", "min_views",
+               "only_shorts", "exclude_shorts", "query"}
+
+
+def test_adapter_never_filters_or_ranks_by_restricted_scores():
+    rec = Recorder()
+    p = make_provider(rec)
+    p.discover_content(DiscoveryQuery(region="US", niche="cooking", max_creator_followers=5000,
+                                      min_views=10, short_form=False))
+    p.search_content(SearchQuery(text="x", niche="cooking", short_form=True))
+    for r in rec.requests:
+        assert set(r.url.params) <= SENT_PARAMS
+        assert r.url.params["sort_by"] in {"views", "published"}
+
+
 def test_allowed_derived_sort_and_unknown_sort():
     rec = Recorder()
     make_provider(rec).discover_content(DiscoveryQuery(sort="views_per_hour_24h"))

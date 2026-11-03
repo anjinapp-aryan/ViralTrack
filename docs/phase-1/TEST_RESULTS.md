@@ -1,5 +1,23 @@
 # Test Results
 
+## Phase 1.2 (2026-11-03, working tree on top of `e035b11`)
+
+| Suite | Passed | Failed | Skipped | Duration |
+|---|---:|---:|---:|---:|
+| ViralTrack, all (Postgres + live demo foundation) | **67** | **0** | **0** | 4.5 s |
+| ViralTrack, plain `pytest` | 58 | 0 | 9 (8 Postgres, 1 live) | 0.2 s |
+| Lint (ruff 0.16.9) | clean | | | |
+| Retention fail-safe: wrong schema | exit 3, `retention error: no niche-finder tables in schema 'nope'` | | | |
+| Upstream submodule | unmodified at `d872014` (0 changed files) | | | |
+
+The upstream suite was not re-run in Phase 1.2: the submodule is unchanged since the Phase 1.1 run
+(1,786 / 0 / 0). New tests: `test_adapter_never_filters_or_ranks_by_restricted_scores`,
+`test_transcripts_after_approval_follow_their_video`; `test_phase_1_1_decisions` now expects every transcript to
+be purged.
+
+GitHub CI on the pushed Phase 1.1 commit `e035b11` (run 41675734597): **success**, 64 passed, 1 skipped (live),
+upstream-suite skipped by design. Phase 1.2 changes: **`GITHUB_CI_NOT_YET_EXECUTED`**.
+
 ## Phase 1.1 (2026-11-03, working tree on top of `355cd19`)
 
 | Suite | Environment | Passed | Failed | Skipped | Duration |

@@ -24,6 +24,7 @@ def test_defaults_are_safe():
     assert s.retention.youtube_stats_days == 30
     assert s.retention.youtube_text_days == 30
     assert s.retention.apply is False
+    assert s.retention.transcripts_approved is False
 
 
 def test_env_example_is_valid_and_has_no_secrets():

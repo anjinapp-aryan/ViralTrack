@@ -78,6 +78,9 @@ class RetentionSettings:
     youtube_stats_days: int
     youtube_text_days: int
     apply: bool                # False = report only, nothing is deleted
+    # False until the transcript legal/platform review approves storing them:
+    # every retention run then deletes all transcripts the foundation holds.
+    transcripts_approved: bool
 
 
 @dataclass(frozen=True)
@@ -110,6 +113,7 @@ class Settings:
             "retention.youtube_stats_days": self.retention.youtube_stats_days,
             "retention.youtube_text_days": self.retention.youtube_text_days,
             "retention.apply": self.retention.apply,
+            "retention.transcripts_approved": self.retention.transcripts_approved,
         }
 
 
@@ -158,6 +162,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
             youtube_stats_days=stats_days,
             youtube_text_days=text_days,
             apply=_bool(env, "VT_RETENTION_APPLY", False),
+            transcripts_approved=_bool(env, "VT_TRANSCRIPTS_APPROVED", False),
         ),
     )
 

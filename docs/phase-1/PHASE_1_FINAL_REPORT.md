@@ -44,15 +44,12 @@ INTERNAL_ONLY, and `collected_at` is unknown for list items.
 
 Enforced policy boundary (DERIVED_METRIC_POLICY.md):
 
-- **6 ALLOWED** (simple arithmetic): engagement rate, views per hour (lifetime / 24 h), views gained 24 h,
-  acceleration, views per follower. Two of them are flagged for review.
-- **8 RESTRICTED** until the amendment is accepted:
-  - outlier scores (3 variants) and the outlier band
-  - viral score
-  - 30-day projection
-  - RPM
-  - the Shorts label
-- **2 INTERNAL_ONLY**.
+- **6 ALLOWED** (simple arithmetic): engagement_rate, views_per_hour_lifetime, views_per_hour_24h,
+  views_gained_24h, acceleration, views_per_follower. acceleration and views_per_follower are flagged for review.
+- **8 RESTRICTED** until the amendment is accepted: outlier_score, outlier_score_age_adjusted,
+  outlier_score_nexlev, outlier_band, viral_score, projected_30d_views, estimated_rpm, short_form_label.
+- **2 INTERNAL_ONLY**: baseline_median_views, semantic_score. (Full reconciliation:
+  METRIC_INVENTORY_AND_APPROVAL.md.)
 - Restricted values cannot enter `Content`. Allow-list mapping, a policy check, a model invariant and a sort
   gate all enforce this, and contract tests cover new upstream fields.
 - **Not coverable by ViralTrack:** the foundation's own dashboard, API and MCP. They are INTERNAL_ONLY

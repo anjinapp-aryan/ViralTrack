@@ -103,12 +103,14 @@ TABLES: dict[str, TableRule] = {
     "niches": TableRule((U,), Action.KEEP, "User-defined niche queries."),
     "user_topics": TableRule((U,), Action.KEEP, "Topics the user watches."),
     "cost_profiles": TableRule((U,), Action.KEEP, "User cost settings."),
-    "transcript_requests": TableRule((U,), Action.KEEP, "User requests for transcripts."),
-    "transcripts": TableRule((U,), Action.REVIEW,
+    "transcript_requests": TableRule((U,), Action.PURGE,
+                                     "Transcript work queue; purged with transcripts until approved."),
+    "transcripts": TableRule((U,), Action.PURGE,
                              "Transcripts pasted by the user from YouTube's UI (not API data). "
-                             "Legal review required; meanwhile deleted with their video."),
-    "transcript_chunks": TableRule((U, D), Action.REVIEW,
-                                   "Chunks + embeddings of transcripts; deleted with their video."),
+                             "Legal review required: every run deletes all of them until "
+                             "VT_TRANSCRIPTS_APPROVED=true; after approval, deleted with their video."),
+    "transcript_chunks": TableRule((U, D), Action.PURGE,
+                                   "Chunks + embeddings of transcripts; as transcripts."),
     # --- accounts, billing, operations (not provider data) ------------------
     "users": TableRule((U,), Action.KEEP, "Accounts."),
     "email_tokens": TableRule((T,), Action.KEEP, "Expiring e-mail tokens."),
@@ -143,6 +145,9 @@ DERIVED_META_KEYS = {"maturity_curve": "calibratedAt", "maturity_curve_check": "
 # Authorized Data (YouTube Analytics via OAuth) must be deleted when the token can no
 # longer be refreshed; a successful daily sync is the proof it still can.
 OWN_CHANNEL_DEPENDENTS = ("own_video_metrics", "own_channel_daily")
+
+# Transcript storage stays off until reviewed (docs/phase-1/OWNER_DECISIONS.md, D).
+TRANSCRIPT_TABLES = ("transcript_chunks", "transcripts", "transcript_requests")
 
 
 @dataclass(frozen=True)

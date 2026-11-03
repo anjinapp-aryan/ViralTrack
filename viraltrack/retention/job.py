@@ -19,6 +19,7 @@ from viraltrack.retention.policy import (
     CHANNEL_DEPENDENTS,
     DERIVED_META_KEYS,
     OWN_CHANNEL_DEPENDENTS,
+    TRANSCRIPT_TABLES,
     VIDEO_DEPENDENTS,
     Window,
 )
@@ -133,6 +134,13 @@ def run(conn, settings: RetentionSettings, schema: str = "public",
             report.affected["chart_entries.rows"] = cur.rowcount
             cur.execute(f"DELETE FROM chart_snapshots WHERE snapshot_id IN ({old})", params)
             report.affected["chart_snapshots.rows"] = cur.rowcount
+
+        # 3b. Transcripts are not approved for storage: remove all of them.
+        if not settings.transcripts_approved:
+            for table in TRANSCRIPT_TABLES:
+                if _columns(cur, table):
+                    cur.execute(f"DELETE FROM {table}")
+                    report.affected[f"transcripts_unapproved.{table}"] = cur.rowcount
 
         # 4. Own channels whose authorization was not re-verified within the text window.
         if {"user_id", "channel_id", "connected_at", "last_synced_at"} <= _columns(cur, "own_channels"):
