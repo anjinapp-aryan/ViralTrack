@@ -25,7 +25,7 @@ only what it really supports. An unsupported call never returns an empty list (a
 
 | Capability | Supported | Backed by | Note |
 |---|---|---|---|
-| discover_content | yes | `GET /api/viral` | Small-channel videos with high views per follower within the collected corpus, ordered by an allowed metric; not all of YouTube |
+| discover_content | yes | `GET /api/viral` | Videos within the collected corpus, filtered by raw values only (period, channel subscribers, views, duration; `min_views_per_subscriber=0` is always sent) and ordered by an allowed metric; not all of YouTube |
 | search_content | yes | `GET /api/search` | Corpus search, no quota |
 | get_content | **no** | — | Upstream has no single-video read endpoint |
 | get_creator | yes | `GET /api/channels/{id}` | Collected channels only (404 → `NotFound`) |

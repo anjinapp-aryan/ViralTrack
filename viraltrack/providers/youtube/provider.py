@@ -48,8 +48,8 @@ _RAW_SORTS = {"views", "published_at"}
 
 CAPABILITIES = PlatformCapabilities({
     Capability.DISCOVER_CONTENT: CapabilityInfo(
-        True, "Videos from small channels with high views per follower within the collected "
-              "corpus (niche-finder /api/viral); not all of YouTube"),
+        True, "Videos within the collected corpus filtered by raw values (period, channel "
+              "subscribers, views, duration) via niche-finder /api/viral; not all of YouTube"),
     Capability.SEARCH_CONTENT: CapabilityInfo(
         True, "Search within the collected corpus (niche-finder /api/search); no quota"),
     Capability.GET_CONTENT: CapabilityInfo(
@@ -68,8 +68,8 @@ CAPABILITIES = PlatformCapabilities({
     Capability.HASHTAGS: CapabilityInfo(False, "not exposed by the foundation's read API"),
     Capability.AUDIO: CapabilityInfo(False, "no YouTube API for trending audio"),
     Capability.DERIVED_VELOCITY: CapabilityInfo(
-        True, "Views per hour / gained from niche-finder snapshots (simple arithmetic), "
-              "passed through as DERIVED"),
+        True, "Views per hour from niche-finder snapshots (simple arithmetic), passed through "
+              "as DERIVED; acceleration is RESTRICTED"),
 })
 
 
@@ -145,6 +145,9 @@ class YouTubeProvider(PlatformProvider):
             "niche": query.niche,
             "max_subscribers": query.max_creator_followers,
             "min_views": query.min_views,
+            # niche-finder filters by views per subscriber >= 1.0 unless told otherwise;
+            # that metric is RESTRICTED, so it must not shape the result set either.
+            "min_views_per_subscriber": 0,
             **_shorts_params(query.short_form),
         }
         return self._page(self._client.get("/api/viral", params))

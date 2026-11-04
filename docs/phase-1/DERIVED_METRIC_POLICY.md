@@ -44,12 +44,12 @@ The foundation computing a metric does **not** authorize ViralTrack to show it.
 
 | ViralTrack name | niche-finder field | Basis | Exposure | Review |
 |---|---|---|---|---|
-| engagement_rate | engagementRate | (likes + comments) / views × 100 | ALLOWED | |
+| engagement_rate | engagementRate | (likes + comments) / views × 100 | ALLOWED | omitted when the like count is hidden (upstream counts hidden likes as 0) |
 | views_per_hour_lifetime | vphLifetime | views / hours since publication | ALLOWED | |
-| views_per_hour_24h | vph24h | view delta between two stored snapshots / hours | ALLOWED | needs snapshots, which are limited to 30 days (retention) |
-| views_gained_24h | viewsGained24h | view delta between snapshots | ALLOWED | |
-| acceleration | acceleration | ratio of two views-per-hour rates | ALLOWED | **review**: confirm a ratio of rates is not a "custom score" |
-| views_per_follower | viewsPerSubscriber | video views / own channel subscribers | ALLOWED | **review**: compares a video with its own channel; confirm it is not channel gamification |
+| views_per_hour_24h | vph24h | (latest views − views at the latest snapshot ≥ 24 h older) / hours between, floored at 0. With no snapshot that old the oldest one is used, so the window varies: longer than 24 h, or shorter when history is thin | ALLOWED | needs snapshots, which are limited to 30 days (retention) |
+| views_gained_24h | viewsGained24h | views_per_hour_24h × 24: a rate scaled to a day, **not** a measured view delta | ALLOWED | |
+| acceleration | acceleration | vph24 / estimated previous-24 h rate (2·vph48 − vph24); 1.0 with under 24 h of history; unbounded when the earlier rate ≤ 0; defined differently on other upstream endpoints | RESTRICTED (Phase 2, owner decision 2026-11-04) | compliance uncertain |
+| views_per_follower | viewsPerSubscriber | video views / channel subscribers; views / 1 when the count is hidden | RESTRICTED (Phase 2, owner decision 2026-11-04) | compliance uncertain: ordering many channels' videos by it is close to ranking channels |
 | outlier_score | outlierScore | views / median of the channel's previous 10 uploads, banded into labels | RESTRICTED | |
 | outlier_score_age_adjusted | outlierScoreAgeAdjusted | divided by a fitted maturity curve (model) | RESTRICTED | |
 | outlier_score_nexlev | outlierScoreNexlev | third-party method | RESTRICTED | |
@@ -74,14 +74,16 @@ adapter at all. The adapter's creator mapping reads only raw `subscribers` and `
    end users** until the amendment is accepted. ViralTrack has no production UI yet; a future UI must be
    built on the ViralTrack provider layer, not on the foundation's screens. (This is a change from
    UI_REUSE_DECISION.md, which reused the dashboard. That reuse is now limited to internal use.)
-2. Discovery filters: `/api/viral` filters by `views_per_follower` ≥ 1.0 (an ALLOWED metric). Upstream may
-   change its defaults. The adapter sends only allowed parameters.
+2. Discovery filters: `/api/viral` filters by views per subscriber ≥ 1.0 by default. Since that metric is
+   RESTRICTED, the adapter always sends `min_views_per_subscriber=0`, which removes the step (verified on the
+   demo foundation's funnel). The adapter sends only allow-listed parameters.
 3. Retention: snapshots behind views-per-hour live at most 30 days (DATA_RETENTION_POLICY.md).
 
 ## Human / legal review items
 
 - **File the YouTube API Compliance Audit with the Analytics & Reporting amendment.** Until it is accepted,
   RESTRICTED stays restricted.
-- Confirm the ALLOWED classification of `acceleration` and `views_per_follower`.
+- `acceleration` and `views_per_follower`: RESTRICTED since Phase 2 (compliance uncertain). Either returns to
+  ALLOWED only after written confirmation in the Google audit or by counsel.
 - Decide whether the Shorts label may be shown, with or without the amendment.
 - Decide whether RPM or revenue estimates should ever be shown (external data).

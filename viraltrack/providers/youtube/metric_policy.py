@@ -22,15 +22,23 @@ AMD = YOUTUBE_ANALYTICS_AMENDMENT
 
 RULES: list[MetricRule] = [
     # --- simple arithmetic over YouTube data only ------------------------------
-    MetricRule("engagement_rate", A, "(likes + comments) / views x 100"),
+    MetricRule("engagement_rate", A, "(likes + comments) / views x 100; omitted by ViralTrack when "
+               "the like count is hidden"),
     MetricRule("views_per_hour_lifetime", A, "views / hours since publication"),
-    MetricRule("views_per_hour_24h", A, "view delta between two stored snapshots / hours between them"),
-    MetricRule("views_gained_24h", A, "view delta between two stored snapshots"),
-    MetricRule("acceleration", A, "views_per_hour_24h / views per hour of the previous window",
-               review="ratio of two simple rates; confirm it is not a 'custom score'"),
-    MetricRule("views_per_follower", A, "video views / channel subscribers",
-               review="compares a video with its own channel; confirm it is not channel gamification"),
+    MetricRule("views_per_hour_24h", A, "(latest stored views - views at the latest snapshot at "
+               "least 24 h older) / hours between them, floored at 0; with no snapshot that old, the "
+               "oldest one is used, so the window varies: longer than 24 h, or shorter when history is thin"),
+    MetricRule("views_gained_24h", A, "views_per_hour_24h x 24: a rate scaled to a day, not a "
+               "measured view delta"),
     # --- need the accepted Analytics & Reporting amendment ---------------------
+    # Owner decision 2026-11-04 (Phase 2 plan, section 1): compliance uncertain.
+    MetricRule("acceleration", R, "views_per_hour_24h / estimated views per hour of the previous "
+               "24 h (2 x vph48 - vph24); exactly 1.0 with under 24 h of history, unbounded when "
+               "the earlier rate is <= 0, defined differently on other upstream endpoints",
+               requires=AMD),
+    MetricRule("views_per_follower", R, "video views / channel subscribers; views / 1 when the "
+               "subscriber count is hidden; ordering many channels' videos by it is close to "
+               "ranking channels", requires=AMD),
     MetricRule("outlier_score", R, "views / median views of the channel's previous 10 uploads, "
                "banded into labels (custom score)", requires=AMD),
     MetricRule("outlier_score_age_adjusted", R, "outlier score divided by a fitted maturity curve "

@@ -43,8 +43,8 @@ metrics from metrics sourced from API Data" (derived-metrics policy).
 | language | language | detected by niche-finder (langdetect or `defaultLanguage`), so treat as approximate |
 | metrics: views, likes, comments | views, likes, comments | RAW |
 | creator.followers, creator.content_count | channelSubscribers, channelVideoCount | RAW |
-| derived (ALLOWED): engagement_rate, views_per_hour_lifetime, views_per_hour_24h, views_gained_24h, acceleration, views_per_follower | engagementRate, vphLifetime, vph24h, viewsGained24h, acceleration, viewsPerSubscriber | DERIVED, passed through |
-| derived (RESTRICTED, only with approval): outlier_score, outlier_score_age_adjusted, outlier_score_nexlev, viral_score, projected_30d_views, estimated_rpm | outlierScore, … | DERIVED; see DERIVED_METRIC_POLICY.md |
+| derived (ALLOWED): engagement_rate (omitted when likes are hidden), views_per_hour_lifetime, views_per_hour_24h, views_gained_24h | engagementRate, vphLifetime, vph24h, viewsGained24h | DERIVED, passed through |
+| derived (RESTRICTED, only with approval): acceleration, views_per_follower, outlier_score, outlier_score_age_adjusted, outlier_score_nexlev, viral_score, projected_30d_views, estimated_rpm | acceleration, viewsPerSubscriber, outlierScore, … | DERIVED; see DERIVED_METRIC_POLICY.md |
 
 The raw/derived split follows niche-finder's own `/api/scores`, which labels every number `source: youtube` or
 `source: niche-finder`.

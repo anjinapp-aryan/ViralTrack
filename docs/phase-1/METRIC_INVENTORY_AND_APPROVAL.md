@@ -7,26 +7,28 @@ judgements, not legal conclusions.
 
 ## Count reconciliation
 
-The Phase 1.1 summary said "6 allowed" and "8 restricted" but listed fewer names, because it grouped some of
-them. The code has **16 rules**:
+**Current (Phase 2 Batch 1, owner decision 2026-11-04):** the code has **16 rules**. The counts are enforced by
+`test_policy_inventory_is_exactly_4_10_2`.
 
 | Exposure | Count | Names |
 |---|---:|---|
-| ALLOWED | **6** | engagement_rate, views_per_hour_lifetime, views_per_hour_24h, views_gained_24h, acceleration, views_per_follower |
-| RESTRICTED | **8** | outlier_score, outlier_score_age_adjusted, outlier_score_nexlev, outlier_band, viral_score, projected_30d_views, estimated_rpm, short_form_label |
+| ALLOWED | **4** | engagement_rate, views_per_hour_lifetime, views_per_hour_24h, views_gained_24h |
+| RESTRICTED | **10** | acceleration, views_per_follower, outlier_score, outlier_score_age_adjusted, outlier_score_nexlev, outlier_band, viral_score, projected_30d_views, estimated_rpm, short_form_label |
 | INTERNAL_ONLY | **2** | baseline_median_views, semantic_score |
 
-The two missing names:
+`acceleration` and `views_per_follower` were ALLOWED (with review) in Phases 1.1 and 1.2. They were moved to
+RESTRICTED because their compliance status is uncertain and the formulas have defects; see
+docs/phase-2/PHASE_2_EXECUTION_PLAN.md, section 1. Either returns to ALLOWED only with written confirmation from
+the Google audit or counsel.
 
-- "Views per hour (lifetime / 24 h)" was **two** metrics, which gives 6 allowed.
-- "Outlier scores (3 variants)" plus **outlier_band** gives the 4 outlier entries; with viral score, 30-day
-  projection, RPM and the Shorts label that makes 8 restricted.
+Of the 10 restricted rules:
 
-Of the 8 restricted rules:
-
-- **6** correspond to numeric fields the mapping knows about and would pass through only with approval.
+- **8** correspond to numeric fields the mapping knows about. They pass through only with approval.
 - `outlier_band` is a string, so it is never mapped.
 - `short_form_label` gates the `SHORT` content-type label rather than a number.
+
+History: Phase 1.1 reported 6 / 8 / 2. Its summary listed fewer names because "views per hour (lifetime / 24 h)"
+counted as one entry and `outlier_band` was grouped with the outlier scores.
 
 Raw metrics are not policy rules: `views`, `likes`, `comments`, plus the creator's `followers`,
 `content_count` and, in history, `total_views`.
@@ -49,12 +51,12 @@ dashboard, HTTP API, export, MCP and alerts (see "Leak surfaces").
 |---|---|---|---|---|---|---|---|---|---|
 | views, likes, comments | API value | statistics.* | RAW | API data | n/a (raw) | Yes | sort by `views` | Yes | `test_raw_and_allowed_derived_by_default` |
 | followers, content_count | API value (subs rounded by YouTube) | channel statistics | RAW | API data | n/a (raw) | Yes (creator) | — | Yes | `test_search_and_creator`, `test_creator_metrics_are_checked_too` |
-| engagement_rate | `(likes + comments) / views × 100`; None if likes and comments are hidden | views, likes, comments | DERIVED | Simple arithmetic, YouTube data only | **ALLOWED** | Yes | sort `engagement` allowed | Yes | `test_raw_and_allowed_derived_by_default` |
+| engagement_rate | `(likes + comments) / views × 100`; None upstream only if **both** are hidden (a hidden like count counts as 0), so ViralTrack omits it when likes are hidden | views, likes, comments | DERIVED | Simple arithmetic, YouTube data only | **ALLOWED** | Yes | sort `engagement` allowed | Yes | `test_raw_and_allowed_derived_by_default`, `test_engagement_rate_omitted_when_likes_are_hidden` |
 | views_per_hour_lifetime | `views / hours since publication` | views, publishedAt | DERIVED | Simple arithmetic | **ALLOWED** | Yes | sort allowed | Yes | same |
-| views_per_hour_24h | `(latest views − views at ~24 h ago) / hours between` over stored snapshots; drops snapshots before the 2026-08-27 view-count change; uses the oldest snapshot if none is 24 h old | stored view snapshots | DERIVED | Simple arithmetic; needs stored statistics (≤ 30 d) | **ALLOWED** | Yes | sort `vph` allowed | Yes | `test_allowed_derived_sort_and_unknown_sort` |
-| views_gained_24h | latest views − views ~24 h earlier | snapshots | DERIVED | Simple arithmetic | **ALLOWED** | Yes | sort `velocity` allowed | Yes | same |
-| acceleration | `vph24 / max(vph_prev24, 0.01)`, `vph_prev24 = 2·vph48 − vph24` (discovery) | snapshots | DERIVED | Division of two simple rates | **ALLOWED** (review, decision B) | Yes | sort allowed | Yes (+ "heating up" / "cooling" labels upstream) | same |
-| views_per_follower | `views / max(subscribers, 1)` | views, channel subscriberCount | DERIVED | Simple division of YouTube data | **ALLOWED** (review, decision B) | Yes | sort `vsr` allowed; upstream `/api/viral` filters `≥ 1.0` by default | Yes | same |
+| views_per_hour_24h | `(latest views − views at the latest snapshot ≥ 24 h older) / hours between`, floored at 0, over stored snapshots. With no snapshot that old the **oldest** is used, so the window varies: longer than 24 h, or shorter when history is thin. Snapshots before the 2026-08-24 view-count change are dropped once a newer one exists | stored view snapshots | DERIVED | Simple arithmetic; needs stored statistics (≤ 30 d) | **ALLOWED** | Yes | sort `vph` allowed | Yes | `test_allowed_derived_sort_and_unknown_sort` |
+| views_gained_24h | `int(views_per_hour_24h × 24)`: a rate scaled to a day, **not** a measured view delta | snapshots | DERIVED | Multiplication of an allowed value | **ALLOWED** | Yes | sort `velocity` allowed | Yes | same |
+| acceleration | `vph24 / max(2·vph48 − vph24, 0.01)` in discovery; `vph24 / vph7d` in upstream inspection. Exactly 1.0 with under 24 h of history; unbounded when the earlier rate ≤ 0 | snapshots | DERIVED | Ratio built on an estimated rate; close to a custom score | **RESTRICTED** (Phase 2) | No | sort refused | **Yes** (+ "heating up" / "cooling" labels and alerts upstream) | `test_restricted_since_phase_2_cannot_be_sorted_by`, `test_policy_inventory_is_exactly_4_10_2` |
+| views_per_follower | `views / max(subscribers or 0, 1)`; `views / 1` when the subscriber count is hidden | views, channel subscriberCount | DERIVED | Ordering many channels' videos by it is close to ranking channels | **RESTRICTED** (Phase 2) | No | sort `vsr` refused; the adapter sends `min_views_per_subscriber=0` so upstream's default `≥ 1.0` filter does not apply | **Yes** | same, plus `test_adapter_never_filters_or_ranks_by_restricted_scores` |
 | outlier_score | `views / median(views of the channel's previous 10 uploads, same format)`, then banded | views, channel's other videos | DERIVED | Custom score assigned from ratios to a baseline | **RESTRICTED** | No | sort refused (`RestrictedMetric`), never filtered | **Yes** | `test_restricted_metrics_never_mapped_without_approval`, `test_sorting_by_a_restricted_metric_is_refused_before_any_call`, `test_adapter_never_filters_or_ranks_by_restricted_scores` |
 | outlier_score_age_adjusted | outlier score / fitted maturity curve(age) | + fitted curve | DERIVED | Model projection | **RESTRICTED** | No | refused | **Yes** | same |
 | outlier_score_nexlev | `views / lifetime mean views per video` (third-party method) | channel totals | DERIVED | Custom score | **RESTRICTED** | No | not sortable | **Yes** | same |
@@ -72,7 +74,7 @@ dashboard, HTTP API, export, MCP and alerts (see "Leak surfaces").
 |---|---|---|
 | ViralTrack normalized content (fields) | **Protected** | Allow-list mapping, policy check, `Content` rejects non-ALLOWED (`test_content_rejects_unexposable_metrics`) |
 | ViralTrack sorting | **Protected** | Explicit `sort_by`, restricted sorts refused before any request |
-| ViralTrack filtering | **Protected** | The adapter sends only an allow-listed set of parameters, never `min_outlier_score`, `preset` or `sort_by=viral/outlier` (`test_adapter_never_filters_or_ranks_by_restricted_scores`). Upstream defaults apply no outlier filter (`min_outlier_score` None / 0.0 is ignored upstream) |
+| ViralTrack filtering | **Protected** | The adapter sends only an allow-listed set of parameters, never `min_outlier_score`, `preset` or `sort_by=viral/outlier/vsr/acceleration`; `/api/viral` always gets `min_views_per_subscriber=0` (`test_adapter_never_filters_or_ranks_by_restricted_scores`). Upstream defaults apply no outlier filter (`min_outlier_score` None / 0.0 is ignored upstream) |
 | ViralTrack search results | **Protected** | Same mapping as discovery |
 | ViralTrack exports, API, dashboard, MCP | **Do not exist** | Nothing to leak today. Any future surface must consume `Content` |
 | ViralTrack logs and CLI output | **Protected** | The provider logs nothing; retention and config print counts and masked settings only (`test_describe_masks_secrets`) |

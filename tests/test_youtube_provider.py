@@ -11,6 +11,7 @@ from viraltrack.domain import (
     Capability,
     ContentType,
     DataOrigin,
+    Exposure,
     MetricKind,
     NotFound,
     Platform,
@@ -146,8 +147,7 @@ def test_raw_and_allowed_derived_by_default():
     assert {m.name for m in c.metrics} == {"views", "likes", "comments"}
     assert all(m.provenance.source == "youtube-data-api" for m in c.metrics)
     assert {m.name for m in c.derived} == {
-        "engagement_rate", "views_per_hour_lifetime", "views_per_hour_24h", "views_gained_24h",
-        "acceleration", "views_per_follower"}
+        "engagement_rate", "views_per_hour_lifetime", "views_per_hour_24h", "views_gained_24h"}
     assert all(m.provenance.source == "niche-finder" and "not a YouTube metric" in m.provenance.note
                for m in c.derived)
 
@@ -160,7 +160,7 @@ def test_history_points_carry_their_capture_time():
 # derived-metric policy --------------------------------------------------------
 
 RESTRICTED = {"outlier_score", "outlier_score_age_adjusted", "outlier_score_nexlev", "viral_score",
-              "projected_30d_views", "estimated_rpm"}
+              "projected_30d_views", "estimated_rpm", "acceleration", "views_per_follower"}
 
 
 def test_restricted_metrics_never_mapped_without_approval():
@@ -172,7 +172,8 @@ def test_restricted_metrics_never_mapped_without_approval():
 
 def test_restricted_metrics_mapped_with_approval():
     c = make_provider(Recorder(), AMENDMENT).discover_content(DiscoveryQuery()).items[0]
-    assert {"outlier_score", "viral_score", "estimated_rpm"} <= {m.name for m in c.derived}
+    assert {"outlier_score", "viral_score", "estimated_rpm", "acceleration",
+            "views_per_follower"} <= {m.name for m in c.derived}
 
 
 def test_internal_only_metrics_never_mapped():
@@ -225,7 +226,7 @@ def test_sorting_by_a_restricted_metric_is_refused_before_any_call():
 # The only query parameters the adapter may send. Anything that filters or ranks by a
 # restricted score (min_outlier_score, preset, sort_by=viral/outlier) is absent.
 SENT_PARAMS = {"period", "sort_by", "limit", "region", "niche", "max_subscribers", "min_views",
-               "only_shorts", "exclude_shorts", "query"}
+               "min_views_per_subscriber", "only_shorts", "exclude_shorts", "query"}
 
 
 def test_adapter_never_filters_or_ranks_by_restricted_scores():
@@ -237,6 +238,41 @@ def test_adapter_never_filters_or_ranks_by_restricted_scores():
     for r in rec.requests:
         assert set(r.url.params) <= SENT_PARAMS
         assert r.url.params["sort_by"] in {"views", "published"}
+    # /api/viral filters by views per subscriber >= 1.0 by default; that metric is RESTRICTED
+    viral = [r for r in rec.requests if r.url.path == "/api/viral"]
+    assert viral and all(r.url.params["min_views_per_subscriber"] == "0" for r in viral)
+    assert all("min_views_per_subscriber" not in r.url.params
+               for r in rec.requests if r.url.path == "/api/search")
+
+
+@pytest.mark.parametrize("sort", ["acceleration", "views_per_follower"])
+def test_restricted_since_phase_2_cannot_be_sorted_by(sort):
+    rec = Recorder()
+    with pytest.raises(RestrictedMetric):
+        make_provider(rec).discover_content(DiscoveryQuery(sort=sort))
+    with pytest.raises(RestrictedMetric):
+        make_provider(rec).search_content(SearchQuery(sort=sort))
+    assert rec.requests == []
+
+
+def test_policy_inventory_is_exactly_4_10_2():
+    """docs/phase-1/METRIC_INVENTORY_AND_APPROVAL.md must change together with this test."""
+    by = {e: sorted(r.name for r in RULES if r.exposure is e) for e in Exposure}
+    assert by[Exposure.ALLOWED] == sorted([
+        "engagement_rate", "views_per_hour_lifetime", "views_per_hour_24h", "views_gained_24h"])
+    assert by[Exposure.RESTRICTED] == sorted(RESTRICTED | {"outlier_band", "short_form_label"})
+    assert by[Exposure.INTERNAL_ONLY] == ["baseline_median_views", "semantic_score"]
+    assert len(RULES) == len({r.name for r in RULES}) == 16
+
+
+def test_engagement_rate_omitted_when_likes_are_hidden():
+    item = dict(load_fixture("viral.json")["results"][0], likes=None)
+    assert item.get("engagementRate") is not None
+    body = json.dumps({"results": [item]}).encode()
+    c = make_provider(Recorder(body=body)).discover_content(DiscoveryQuery()).items[0]
+    assert "engagement_rate" not in {m.name for m in c.derived}
+    assert "likes" not in {m.name for m in c.metrics}
+    assert {"views_per_hour_lifetime", "views_gained_24h"} & {m.name for m in c.derived}
 
 
 def test_allowed_derived_sort_and_unknown_sort():

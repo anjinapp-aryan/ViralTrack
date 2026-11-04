@@ -52,6 +52,10 @@ DERIVED_VIDEO_METRICS = {
     "estimatedRpm": "estimated_rpm",
 }
 
+# Derived values that are only meaningful when a raw input is present. niche-finder
+# counts a hidden like count as 0 in engagementRate, which understates it.
+REQUIRES_RAW = {"engagement_rate": ("likes",)}
+
 # Real YouTube ids. The niche-finder demo seed uses ids like "bvid008", so a demo
 # corpus served as "real" is rejected instead of being passed off as provider data.
 _VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
@@ -103,6 +107,8 @@ def _derived(ctx: MappingContext, item: dict) -> tuple[Metric, ...]:
     for key, name in DERIVED_VIDEO_METRICS.items():
         value = _num(item.get(key))
         if value is None or not ctx.policy.exposable(name):
+            continue
+        if any(_num(item.get(raw)) is None for raw in REQUIRES_RAW.get(name, ())):
             continue
         rule = ctx.policy.rules[name]
         prov = Provenance(provider=PROVIDER_ID, source=DERIVED_SOURCE, collected_at=None,

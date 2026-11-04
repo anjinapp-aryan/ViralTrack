@@ -1,5 +1,38 @@
 # Test Results
 
+## Phase 2 Batch 1: metric reconciliation (2026-11-04, working tree on top of `4b0bb9b`)
+
+| Suite | Passed | Failed | Skipped | Duration |
+|---|---:|---:|---:|---:|
+| ViralTrack, all (pgserver Postgres 16.2 + live demo foundation on :3903) | **71** | **0** | **0** | 2.6 s |
+| ViralTrack, plain `pytest` | 62 | 0 | 9 (8 Postgres, 1 live) | 0.2 s |
+| Lint (ruff 0.16.9) | clean | | | |
+| Upstream submodule | unmodified at `d872014` | | | |
+
+New tests:
+
+- `test_policy_inventory_is_exactly_4_10_2`
+- `test_restricted_since_phase_2_cannot_be_sorted_by` ×2: acceleration and views_per_follower, discovery and
+  search, with no request made
+- `test_engagement_rate_omitted_when_likes_are_hidden`
+
+Updated tests:
+
+- `test_raw_and_allowed_derived_by_default`: 4 allowed.
+- `RESTRICTED`: now includes acceleration and views_per_follower.
+- `test_restricted_metrics_mapped_with_approval`: both are mapped only with the amendment flag.
+- `test_adapter_never_filters_or_ranks_by_restricted_scores`: `/api/viral` always gets
+  `min_views_per_subscriber=0`, and `/api/search` never gets it.
+
+Live check against the demo foundation (origin `demo`, 0 quota):
+
+- `/api/viral` without the parameter: the funnel includes `views per subscriber >= 1.0`.
+- With `min_views_per_subscriber=0`: that step is gone.
+- Through the adapter: 24 items, total 102. Derived metrics mapped: engagement_rate, views_gained_24h,
+  views_per_hour_24h and views_per_hour_lifetime only.
+
+GitHub CI: **`GITHUB_CI_NOT_YET_EXECUTED`** (not committed).
+
 ## Phase 1.2 (2026-11-03, working tree on top of `e035b11`)
 
 | Suite | Passed | Failed | Skipped | Duration |
