@@ -1,0 +1,42 @@
+# Foundation (niche-finder) on a managed PostgreSQL: Neon, Supabase, Aiven or any
+# other provider. Layered on docker-compose.yml; upstream files stay unchanged.
+#
+#   docker compose -f docker-compose.yml -f deploy/compose.managed-db.yml up -d web worker retention
+#
+# Connection settings, in the ROOT .env (never committed), each from the provider's dashboard:
+#   POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+#     -> read by niche-finder (it builds postgresql://user:password@host:port/db itself, so a
+#        password with @ : / # ? characters must be percent-encoded).
+#     Use a DIRECT or SESSION-MODE connection: niche-finder keeps session state (SET ROLE for
+#     row-level security, session advisory locks, search_path), which transaction-mode poolers
+#     (Neon "-pooler" hosts, Supabase port 6543) do not preserve.
+#   FOUNDATION_DB_SSL_MODE   default require. For verify-ca / verify-full, also mount the
+#     provider's CA certificate into the containers and add PGSSLROOTCERT=<path in container>
+#     in a further override (not set here: an empty value would be a wrong path).
+#   DATABASE_PROVIDER, DATABASE_URL  -> ViralTrack's retention job (may use a pooled URL);
+#     required here, so the job cannot fall back to the unused local database.
+#
+# libpq reads PGSSLMODE / PGSSLROOTCERT / PGAPPNAME from the environment, so TLS needs no
+# upstream change. The local `postgres` service is left out of the dependency chain.
+
+x-managed-db-env: &managed-db-env
+  PGSSLMODE: "${FOUNDATION_DB_SSL_MODE:-require}"
+  PGAPPNAME: "niche-finder"
+
+services:
+  web:
+    environment: *managed-db-env
+    depends_on: !reset {}
+  worker:
+    environment: *managed-db-env
+    depends_on: !reset {}
+  mcp:
+    environment: *managed-db-env
+    depends_on: !reset {}
+  mcp-http:
+    environment: *managed-db-env
+    depends_on: !reset {}
+  retention:
+    environment:
+      DATABASE_PROVIDER: "${DATABASE_PROVIDER:?set DATABASE_PROVIDER (neon, supabase, aiven or postgres)}"
+      DATABASE_URL: "${DATABASE_URL:?set DATABASE_URL to the managed database}"

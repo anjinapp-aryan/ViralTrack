@@ -29,3 +29,33 @@ class ProviderUnavailable(ProviderError):
 
 class NotFound(ProviderError):
     pass
+
+
+class ProviderAuthFailed(ProviderError):
+    """The backend rejected ViralTrack's credentials (401/403)."""
+
+
+class ProviderCredentialsMissing(ProviderError):
+    """The backend has no platform API credentials, so it cannot collect anything."""
+
+
+class QuotaExhausted(ProviderError):
+    """Platform quota is spent, or below the floor ViralTrack keeps in reserve."""
+
+
+class RateLimited(ProviderError):
+    """The backend asked us to wait (cooldown). `retry_after` is in seconds, if given."""
+
+    def __init__(self, provider: str, message: str, status: int | None = None,
+                 retry_after: int | None = None):
+        super().__init__(provider, message, status)
+        self.retry_after = retry_after
+
+
+class IngestionDisabled(ViralTrackError):
+    """Ingestion is switched off in configuration; no request was made."""
+
+    def __init__(self, provider: str, setting: str):
+        super().__init__(f"{provider}: ingestion is disabled (set {setting}=true to allow it)")
+        self.provider = provider
+        self.setting = setting

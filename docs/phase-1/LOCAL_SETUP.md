@@ -78,6 +78,7 @@ Verified against the foundation on demo data (port 3903) and on Docker (port 809
 
 ```bash
 python -m viraltrack.config                # prints settings with secrets masked; exit 1 if invalid
+python -m viraltrack.database              # read-only database compatibility check (DATABASE_URL)
 python -m viraltrack.retention             # report only (transaction rolled back)
 python -m viraltrack.retention --apply     # delete
 ```

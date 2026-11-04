@@ -7,7 +7,8 @@ can never be mistaken for an empty result.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from viraltrack.domain import (
@@ -52,6 +53,34 @@ class CreatorSnapshot:
     metrics: tuple[Metric, ...]
 
 
+@dataclass(frozen=True)
+class QuotaStatus:
+    """Quota as the provider's backend reports it. Nothing here is estimated."""
+    has_credentials: bool
+    units_left: int
+    unit_limit: int
+    search_calls_left: int
+    search_call_limit: int
+    checked_at: datetime
+
+
+@dataclass(frozen=True)
+class IngestionResult:
+    """What one ingestion call did, copied from the backend's answer.
+
+    `counts` holds the backend's own tallies (e.g. videos_found, videos_stored).
+    `quota_units_reported` / `search_calls_reported` are the backend's figures
+    for this call, or None when it reported none; ViralTrack never computes them.
+    """
+    provider: str
+    operation: str
+    finished_at: datetime
+    counts: Mapping[str, int] = field(default_factory=dict)
+    creator_id: str | None = None
+    quota_units_reported: int | None = None
+    search_calls_reported: int | None = None
+
+
 class PlatformProvider(ABC):
     provider_id: str
     platform: Platform
@@ -80,6 +109,20 @@ class PlatformProvider(ABC):
 
     def get_trending_content(self, region: str | None = None) -> ContentPage:
         self._unsupported(Capability.GLOBAL_TRENDING)
+
+    # ingestion: internal-only, may spend platform quota --------------------
+    def collect_creator(self, creator_ref: str, max_items: int | None = None) -> IngestionResult:
+        self._unsupported(Capability.COLLECT_CREATOR)
+
+    def collect_query(self, text: str, pages: int = 1, region: str | None = None,
+                      language: str | None = None) -> IngestionResult:
+        self._unsupported(Capability.COLLECT_QUERY)
+
+    def refresh_stats(self, period: str = "7d", limit: int | None = None) -> IngestionResult:
+        self._unsupported(Capability.REFRESH_STATS)
+
+    def ingestion_status(self) -> QuotaStatus:
+        self._unsupported(Capability.INGESTION_STATUS)
 
     def close(self) -> None:
         pass

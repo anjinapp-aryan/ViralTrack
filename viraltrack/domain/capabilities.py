@@ -22,6 +22,12 @@ class Capability(str, Enum):
     HASHTAGS = "hashtags"
     AUDIO = "audio"                            # trending sounds / audio
     DERIVED_VELOCITY = "derived_velocity"      # views-per-hour etc. computed from snapshots
+    # Ingestion: ask the provider's backend to collect through the official API.
+    # Internal-only operations; they may spend platform quota.
+    COLLECT_CREATOR = "collect_creator"        # one creator's uploads
+    COLLECT_QUERY = "collect_query"            # keyword search
+    REFRESH_STATS = "refresh_stats"            # re-read counters of collected items
+    INGESTION_STATUS = "ingestion_status"      # quota remaining, as the backend reports it
 
 
 @dataclass(frozen=True)

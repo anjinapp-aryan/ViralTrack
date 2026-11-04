@@ -22,8 +22,14 @@ services:
       - path: .env
         required: false
     environment:
-      VT_DATABASE_URL: "postgresql://${POSTGRES_USER:-niches}:${POSTGRES_PASSWORD:-niches}@postgres:5432/${POSTGRES_DB:-niches}"
-      VT_DATABASE_SCHEMA: "${VT_DATABASE_SCHEMA:-public}"
+      # The foundation's database. Default: the compose `postgres` service. Set DATABASE_URL
+      # (and DATABASE_PROVIDER) in .env for a managed database; see .env.example.
+      DATABASE_PROVIDER: "${DATABASE_PROVIDER:-local}"
+      DATABASE_URL: "${DATABASE_URL:-postgresql://${POSTGRES_USER:-niches}:${POSTGRES_PASSWORD:-niches}@postgres:5432/${POSTGRES_DB:-niches}}"
+      DATABASE_SCHEMA: "${DATABASE_SCHEMA:-public}"
+      # Earlier spellings, blanked so a stale .env value cannot conflict with the above.
+      VT_DATABASE_URL: ""
+      VT_DATABASE_SCHEMA: ""
     # Daily: delete what the policy no longer allows to keep. Runs once at start;
     # a failed run is retried after 10 minutes instead of waiting a day.
     command: ["sh", "-c", "while true; do if python -m viraltrack.retention --apply; then sleep 86400; else sleep 600; fi; done"]

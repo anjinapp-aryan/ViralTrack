@@ -1,8 +1,11 @@
 """python -m viraltrack.retention [--apply]
 
 Report (default) or enforce the retention policy on the niche-finder database
-named by VT_DATABASE_URL / VT_DATABASE_SCHEMA. Run it daily; the docker-compose
-`retention` service does that with --apply.
+named by DATABASE_URL / DATABASE_SCHEMA (any PostgreSQL provider, see
+docs/architecture/DATABASE_CONFIGURATION.md). Run it daily; the docker-compose
+`retention` service does that with --apply. It uses exactly one connection.
+
+Exit codes: 0 done, 2 configuration error, 3 wrong schema, 4 database unreachable.
 """
 from __future__ import annotations
 
@@ -11,9 +14,8 @@ import json
 import logging
 import sys
 
-import psycopg2
-
 from viraltrack.config import load_settings
+from viraltrack.database import DatabaseUnavailable, connect, prepare_transaction
 from viraltrack.domain import ConfigError
 from viraltrack.retention.job import SchemaNotFound, run
 
@@ -31,10 +33,15 @@ def main(argv=None) -> int:
     logging.basicConfig(level=settings.log_level,
                         format="%(asctime)s %(levelname)s %(name)s %(message)s")
     if not settings.database.url:
-        print("config error: VT_DATABASE_URL is not set", file=sys.stderr)
+        print("config error: DATABASE_URL is not set", file=sys.stderr)
         return 2
-    conn = psycopg2.connect(settings.database.url)
     try:
+        conn = connect(settings.database)
+    except DatabaseUnavailable as exc:
+        print(f"database error: {exc}", file=sys.stderr)
+        return 4
+    try:
+        prepare_transaction(conn, settings.database)
         report = run(conn, settings.retention, schema=settings.database.schema,
                      apply=args.apply or settings.retention.apply)
     except SchemaNotFound as exc:

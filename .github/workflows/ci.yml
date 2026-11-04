@@ -20,7 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        # Same image the foundation needs (PostgreSQL 16 + pgvector).
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: vt
           POSTGRES_PASSWORD: vt
@@ -67,6 +68,7 @@ jobs:
       - name: Tests
         env:
           VT_TEST_DATABASE_URL: postgresql://vt:vt@localhost:5432/vt
+          VT_TEST_REQUIRE_PGVECTOR: "1"
         run: pytest -q -p no:cacheprovider
 
   # The adopted foundation's own suite, as its CI runs it (pgvector Postgres).

@@ -1,9 +1,14 @@
 from viraltrack.domain.capabilities import Capability, CapabilityInfo, PlatformCapabilities
 from viraltrack.domain.errors import (
     ConfigError,
+    IngestionDisabled,
     NotFound,
+    ProviderAuthFailed,
+    ProviderCredentialsMissing,
     ProviderError,
     ProviderUnavailable,
+    QuotaExhausted,
+    RateLimited,
     UnsupportedCapability,
     ViralTrackError,
 )
@@ -24,6 +29,8 @@ __all__ = [
     "Capability", "CapabilityInfo", "PlatformCapabilities",
     "ConfigError", "NotFound", "ProviderError", "ProviderUnavailable",
     "UnsupportedCapability", "ViralTrackError",
+    "IngestionDisabled", "ProviderAuthFailed", "ProviderCredentialsMissing", "QuotaExhausted",
+    "RateLimited",
     "Content", "ContentPage", "ContentType", "Creator", "DataOrigin", "Metric", "MetricKind",
     "Exposure", "MetricPolicy", "MetricRule", "RestrictedMetric",
     "Platform", "Provenance",

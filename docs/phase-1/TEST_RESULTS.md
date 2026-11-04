@@ -1,5 +1,77 @@
 # Test Results
 
+## Database provider configuration (2026-11-04, working tree; not a Phase 2 batch)
+
+| Suite | Passed | Failed | Skipped | Duration |
+|---|---:|---:|---:|---:|
+| ViralTrack, all, against pgserver PostgreSQL 16.2 with pgvector 0.6.2 (`VT_TEST_REQUIRE_PGVECTOR=1`) | **181** | **0** | 2 (live foundation not running) | 16.2 s |
+| `tests/test_database.py` with Postgres | 65 | 0 | 0 | 13.8 s |
+| `tests/test_database.py` without Postgres | 60 | 0 | 5 | 13.2 s |
+| Lint (ruff 0.16.9) | clean | | | |
+| `python -m viraltrack.database` (local) | exit 0: PostgreSQL 16.2, pgvector 0.6.2 in `public`, HNSW-capable, visible | | | |
+| `docker compose config` (base; managed override with and without `DATABASE_URL`) | renders; the managed override refuses a missing `DATABASE_URL` | | | |
+
+A defect found by testing: this Windows PostgreSQL build rejects `TimeZone = 'UTC'` (no time-zone database).
+ViralTrack now sets a fixed `+00:00` offset instead.
+
+**No managed provider (Neon, Supabase, Aiven) was connected.** Their profiles are tested as configuration
+with placeholder URLs only. The stack was not started in Docker in this task, because the Docker daemon was
+not running.
+
+## Phase 2 Batch 2: ingestion interface (2026-11-04, working tree on top of `9825f2d`)
+
+| Suite | Passed | Failed | Skipped | Duration |
+|---|---:|---:|---:|---:|
+| ViralTrack, all (pgserver Postgres 16.2 + live demo foundation on :3903, **no YouTube key**) | **118** | **0** | **0** | 3.1 s |
+| ViralTrack, plain `pytest` | 108 | 0 | 10 (8 Postgres, 2 live) | 0.3 s |
+| `tests/test_ingestion.py` alone (offline) | 46 | 0 | 1 (live) | |
+| Lint (ruff 0.16.9) | clean | | | |
+| Upstream submodule | unmodified at `d872014` | | | |
+
+`tests/test_ingestion.py` covers the following:
+
+- **Disabled by default.** Each of the 4 ingestion methods makes **zero requests** while disabled. The disabled
+  check runs before argument validation.
+- **Success paths.**
+  - Collect creator, collect query and refresh: exact POST bodies, the `X-NF-Client` header, and counts and
+    quota figures copied from the foundation.
+  - Quota left as None when the foundation reports none.
+  - `ingestion_status`.
+- **Pre-flight**, with no POST made in each case:
+  - no key (from `/api/health`);
+  - the unit floor;
+  - the search-call floor, counting the pages asked for;
+  - quota not reported (3 shapes).
+
+  A creator collection does not need search calls.
+- **Upstream refusals.**
+  - 428 maps to `ProviderCredentialsMissing`.
+  - 429 `QuotaExceeded` maps to `QuotaExhausted`.
+  - 429 `ManualRunLimit` with `Retry-After`: `RateLimited`, after which nothing is sent until the cooldown
+    expires.
+  - 401/403 map to `ProviderAuthFailed`.
+  - 403 `PlanLimit` / `ReadOnlyView`, 404, 400 and 500 map to typed errors.
+- **Input limits.** 9 invalid arguments rejected with no request.
+- **Boundary.**
+  - The client POSTs only to the 3 documented collection routes; others are refused, including path traversal.
+  - Reads stay GET-only with ingestion enabled.
+  - Base-class defaults raise `UnsupportedCapability`.
+  - Settings are bounded and described.
+- **Live (demo foundation, no key).**
+  - `ingestion_status` reports `has_credentials=False`.
+  - All three collection calls raise `ProviderCredentialsMissing`.
+  - `/api/stats` is unchanged.
+  - The foundation's access log shows **0** POST requests.
+
+Real-data ingestion: **`REAL_DATA_VALIDATION_BLOCKED — YOUTUBE_API_KEY_NOT_CONFIGURED`**. No collection was
+performed and no quota was spent.
+
+GitHub CI: **`GITHUB_CI_NOT_YET_EXECUTED`** (not committed).
+
+## Phase 2 Batch 1: GitHub CI
+
+`9825f2d` (run 41832452818): **success**, 70 passed, 1 skipped (live).
+
 ## Phase 2 Batch 1: metric reconciliation (2026-11-04, working tree on top of `4b0bb9b`)
 
 | Suite | Passed | Failed | Skipped | Duration |

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 from viraltrack.config import YouTubeProviderSettings
@@ -11,22 +11,30 @@ from viraltrack.domain import (
     CapabilityInfo,
     ContentPage,
     Creator,
+    IngestionDisabled,
     Platform,
     PlatformCapabilities,
+    ProviderCredentialsMissing,
     ProviderError,
+    QuotaExhausted,
+    RateLimited,
     RestrictedMetric,
 )
 from viraltrack.providers.base import (
     CreatorSnapshot,
     DiscoveryQuery,
+    IngestionResult,
     PlatformProvider,
+    QuotaStatus,
     SearchQuery,
 )
-from viraltrack.providers.youtube import mapping
+from viraltrack.providers.youtube import ingestion, mapping
 from viraltrack.providers.youtube.client import PROVIDER_ID, FoundationClient
 from viraltrack.providers.youtube.metric_policy import youtube_metric_policy
 
 _PERIOD = re.compile(r"^(all|\d{1,4}[hd])$")
+_REGION = re.compile(r"^[A-Z]{2}$")
+_LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$")
 
 # ViralTrack sort key -> niche-finder `sort_by` (upstream discovery.SORTS).
 # niche-finder's own defaults ("viral", "outlier") rank by RESTRICTED scores, so
@@ -67,6 +75,16 @@ CAPABILITIES = PlatformCapabilities({
     Capability.ENGAGEMENT_METRICS: CapabilityInfo(True, "likeCount, commentCount"),
     Capability.HASHTAGS: CapabilityInfo(False, "not exposed by the foundation's read API"),
     Capability.AUDIO: CapabilityInfo(False, "no YouTube API for trending audio"),
+    Capability.COLLECT_CREATOR: CapabilityInfo(
+        True, "Internal only. niche-finder POST /api/collect/channel (uploads playlist, ~1 unit "
+              "per 50 videos); needs VT_YOUTUBE_INGESTION_ENABLED=true and the foundation's key"),
+    Capability.COLLECT_QUERY: CapabilityInfo(
+        True, "Internal only. niche-finder POST /api/collect/niche (search.list, 100 calls/day "
+              "bucket); needs VT_YOUTUBE_INGESTION_ENABLED=true and the foundation's key"),
+    Capability.REFRESH_STATS: CapabilityInfo(
+        True, "Internal only. niche-finder POST /api/refresh; needs VT_YOUTUBE_INGESTION_ENABLED=true"),
+    Capability.INGESTION_STATUS: CapabilityInfo(
+        True, "Internal only. Quota left today as niche-finder GET /api/health reports it"),
     Capability.DERIVED_VELOCITY: CapabilityInfo(
         True, "Views per hour from niche-finder snapshots (simple arithmetic), passed through "
               "as DERIVED; acceleration is RESTRICTED"),
@@ -105,6 +123,8 @@ class YouTubeProvider(PlatformProvider):
         self._clock = clock
         self._origin = mapping.ORIGINS[settings.data_origin]
         self.metric_policy = youtube_metric_policy(settings.approvals)
+        self._ingestion = settings.ingestion
+        self._cooldown_until: datetime | None = None
 
     def capabilities(self) -> PlatformCapabilities:
         return CAPABILITIES
@@ -177,6 +197,94 @@ class YouTubeProvider(PlatformProvider):
             if mapped:
                 out.append(CreatorSnapshot(captured_at=mapped[0], metrics=mapped[1]))
         return out
+
+    # ingestion (internal only; spends YouTube quota through the foundation) ----
+
+    def ingestion_status(self) -> QuotaStatus:
+        self._require_ingestion()
+        return ingestion.quota_status(self._client.get("/api/health"), self._clock())
+
+    def collect_creator(self, creator_ref: str, max_items: int | None = None) -> IngestionResult:
+        self._require_ingestion()
+        ref = _ref(creator_ref)
+        body = {"channel": ref, "max_videos": self._cap(max_items, "max_items")}
+        self._preflight(search_calls=0)
+        answer = self._post("/api/collect/channel", body)
+        return ingestion.collect_result("collect_creator", answer, self._clock())
+
+    def collect_query(self, text: str, pages: int = 1, region: str | None = None,
+                      language: str | None = None) -> IngestionResult:
+        self._require_ingestion()
+        query = _ref(text)
+        pages = self._cap(pages, "max_search_pages")
+        if region is not None and not _REGION.match(region):
+            raise ValueError(f"region must be an ISO 3166-1 alpha-2 code like US, got {region!r}")
+        if language is not None and not _LANGUAGE.match(language):
+            raise ValueError(f"language must be a code like en or pt-BR, got {language!r}")
+        body = {"query": query, "pages": pages, "region": region, "language": language}
+        self._preflight(search_calls=pages)
+        answer = self._post("/api/collect/niche", body)
+        return ingestion.collect_result("collect_query", answer, self._clock())
+
+    def refresh_stats(self, period: str = "7d", limit: int | None = None) -> IngestionResult:
+        self._require_ingestion()
+        body = {"scope": "recent", "period": _check_period(period),
+                "limit": self._cap(limit, "max_items")}
+        self._preflight(search_calls=0)
+        return ingestion.refresh_result(self._post("/api/refresh", body), self._clock())
+
+    def _require_ingestion(self) -> None:
+        """First check of every ingestion call: nothing is sent while disabled."""
+        if not self._ingestion.enabled:
+            raise IngestionDisabled(PROVIDER_ID, "VT_YOUTUBE_INGESTION_ENABLED")
+
+    def _cap(self, value: int | None, setting: str) -> int:
+        cap = getattr(self._ingestion, setting)
+        if value is None:
+            return cap
+        if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= cap:
+            raise ValueError(f"must be between 1 and {cap} ({setting}), got {value!r}")
+        return value
+
+    def _preflight(self, search_calls: int) -> None:
+        """Cooldown, credentials and quota floor, before anything that spends quota."""
+        now = self._clock()
+        if self._cooldown_until is not None and now < self._cooldown_until:
+            wait = int((self._cooldown_until - now).total_seconds()) + 1
+            raise RateLimited(PROVIDER_ID, "the foundation asked to wait; cooldown still active",
+                              429, retry_after=wait)
+        status = ingestion.quota_status(self._client.get("/api/health"), now)
+        if not status.has_credentials:
+            raise ProviderCredentialsMissing(
+                PROVIDER_ID, "the foundation has no YOUTUBE_API_KEY configured")
+        if status.units_left < self._ingestion.min_units_left:
+            raise QuotaExhausted(PROVIDER_ID, f"{status.units_left} units left today, below the "
+                                 f"floor of {self._ingestion.min_units_left} "
+                                 "(VT_YOUTUBE_QUOTA_FLOOR_UNITS)")
+        if search_calls and (status.search_calls_left
+                             < search_calls + self._ingestion.min_search_calls_left):
+            raise QuotaExhausted(PROVIDER_ID, f"{status.search_calls_left} search calls left "
+                                 f"today; {search_calls} requested and "
+                                 f"{self._ingestion.min_search_calls_left} kept in reserve "
+                                 "(VT_YOUTUBE_QUOTA_FLOOR_SEARCH_CALLS)")
+
+    def _post(self, path: str, body: dict) -> dict:
+        try:
+            return self._client.post(path, body)
+        except RateLimited as exc:
+            if exc.retry_after:
+                self._cooldown_until = self._clock() + timedelta(seconds=exc.retry_after)
+            raise
+
+
+def _ref(value: str) -> str:
+    """A channel reference or search text sent in a JSON body."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("must not be empty")
+    value = value.strip()
+    if len(value) > 200:
+        raise ValueError("must be at most 200 characters")
+    return value
 
 
 __all__ = ["CAPABILITIES", "RestrictedMetric", "YouTubeProvider"]

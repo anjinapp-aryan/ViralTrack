@@ -7,8 +7,8 @@ approval.
 
 | Batch | Status |
 |---|---|
-| 1 | Approved; implemented in the working tree; at its acceptance gate; not committed |
-| 2 | Approved with conditions; starts only after Batch 1 passes |
+| 1 | **Done**: committed by the owner as `9825f2d`; GitHub CI green (70 passed, 1 skipped) |
+| 2 | Approved with 12 conditions; implemented in the working tree; at its acceptance gate; not committed |
 | 3 | Needs a separate approval after Batch 2. It includes the owner's retention verification requirements |
 | 4 | **Deferred**: no FastAPI, uvicorn or new API service in this phase |
 | 5 | Not started |
@@ -238,3 +238,31 @@ separate approval for each batch.
 2. Approve Batch 2's change from a GET-only adapter to one that may trigger collection (off by default)?
 3. Thumbnail downloads (`WORKER_THUMBS`): turn them off for ViralTrack deployments? Recommended: yes.
 4. Batch 4 (internal read API with FastAPI): include it in Phase 2 or defer it?
+
+## 11. Batch 2 as implemented (2026-11-04)
+
+The 12 owner conditions and where each is met:
+
+| # | Condition | Where |
+|---|---|---|
+| 1 | `VT_YOUTUBE_INGESTION_ENABLED=false` by default | `config.py` `IngestionSettings`; `.env.example`; `test_ingestion_is_disabled_by_default` |
+| 2 | No collection request without enablement | `YouTubeProvider._require_ingestion`, the first statement of every ingestion method |
+| 3 | Documented upstream routes only | `client.WRITE_ROUTES`: `/api/collect/channel`, `/api/collect/niche`, `/api/refresh`; reads `/api/health` |
+| 4 | No new YouTube client | ViralTrack sends HTTP only to the foundation |
+| 5 | Reuse upstream quota enforcement | The foundation's client enforces the pool; its 429 `QuotaExceeded` maps to `QuotaExhausted` |
+| 6 | Quota pre-flight | `_preflight`: `GET /api/health`; key present, unit floor, search-call floor; fails closed when not reported |
+| 7 | Cooldowns and rate limits | 429 `Retry-After` / `retryAfter` gives `RateLimited`; local cooldown blocks further sends until it expires |
+| 8 | Typed errors | `QuotaExhausted`, `ProviderCredentialsMissing`, `ProviderAuthFailed`, `IngestionDisabled`, `RateLimited` (domain errors) |
+| 9 | Never estimate quota | `ingestion.py` copies `quota.units_from_shared_pool` / `quota.search_calls`; None when absent |
+| 10 | Disabled means zero requests | `test_disabled_ingestion_makes_zero_requests` (each method) |
+| 11 | Internal-only | No API, CLI, UI or MCP calls these methods; capability notes say "Internal only" |
+| 12 | Upstream untouched | Submodule clean at `d872014` |
+
+Differences from section 4:
+
+- `INGESTION_STATUS` reports quota only, from `/api/health`. Coverage and freshness are not wrapped; they are
+  read-only reports that can be added if Batch 3 needs them.
+- The domain value types (`IngestionResult`, `QuotaStatus`) live in `viraltrack/providers/base.py` next to the
+  existing query types, not in `domain/models.py`.
+- `collect_creator` never sends `track`, so it does not change the foundation's watchlist.
+

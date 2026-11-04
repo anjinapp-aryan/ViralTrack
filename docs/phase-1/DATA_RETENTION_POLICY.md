@@ -139,3 +139,8 @@ API data.
    the user keeps them (watchlist, saved items, draft links).
 4. Deployments must run the `retention` service (or `python -m viraltrack.retention --apply` daily).
    Running the foundation's compose file alone re-creates the unsafe behaviour.
+5. **Managed-database backups** (2026-11-04, docs/deployment/DATABASE_PROVIDER_COMPATIBILITY.md):
+   - Provider backups and point-in-time restore keep deleted rows beyond 30 days. Counsel should confirm
+     whether that is acceptable. Until then, keep the backup or history window at or below 30 days where the
+     plan allows it, and record the chosen setting here.
+   - A restore can bring deleted rows back, so run the retention job immediately after any restore.
