@@ -1,16 +1,43 @@
 # Ingestion profile and retention verification (Phase 2 Batch 3)
 
-Date: 2026-11-04. Status: implemented and verified locally; **not committed**. No YouTube API key is configured and
+Date: 2026-11-04. Status: implemented and verified locally (Batch 3 committed as `c612136`; the compose safety change is uncommitted). No YouTube API key is configured and
 no real YouTube data was collected. Every test row below is synthetic.
 
 ## 1. Profile
 
-Apply it as a compose layer; the upstream compose file stays unchanged:
+The profile is part of the default stack. `docker-compose.yml` lists two files in one `include` entry:
 
-```text
-docker compose -f docker-compose.yml -f deploy/compose.ingestion-profile.yml up -d web worker retention
-# managed database: add -f deploy/compose.managed-db.yml
+```yaml
+include:
+  - path:
+      - upstream/youtube-niche-finder/docker-compose.yml
+      - deploy/compose.ingestion-profile.yml   # merged over the upstream services
 ```
+
+Compose merges the second file over the first (a documented feature of `include` with several paths), so plain
+`docker compose config` and `docker compose up` already render `WORKER_THUMBS=0`, `WORKER_THUMB_EMBED=0` and
+`LLM_PROVIDER=none`. No `-f` flag and no variable has to be remembered; the upstream file is not edited.
+
+How the selection was evaluated:
+
+| Option | Verdict |
+|---|---|
+| `-f` flags on every command (previous design) | Rejected: forgetting the flag silently re-enabled thumbnail downloads |
+| `COMPOSE_FILE` + `COMPOSE_PATH_SEPARATOR` in `.env` | Rejected: still opt-in (a missing or edited `.env` line, or an explicit `-f`, drops it), and Windows/Linux separators differ |
+| Multi-path `include` in `docker-compose.yml` (**chosen**) | Always applied, because it is part of the file compose loads by default; verified by rendering |
+
+The managed-database override (`-f docker-compose.yml -f deploy/compose.managed-db.yml`) layers on top and keeps
+the safe values (tested). The only way to get thumbnails back is to edit `docker-compose.yml` or the profile file,
+which is a reviewable code change. Keys under `environment` beat both the foundation's `env_file` and the root
+`.env`, so `WORKER_THUMBS=1` or a blank value in `.env` cannot re-enable the step (tested).
+
+### The retention container and the API key
+
+The retention service has no `env_file`. The root `.env` also holds `YOUTUBE_API_KEY`, and compose cannot filter an
+`env_file`, so the service lists the variables it reads instead (`VT_ENV`, `VT_LOG_LEVEL`, `VT_RETENTION_*`,
+`VT_YOUTUBE_ANALYTICS_AMENDMENT_ACCEPTED`, `VT_TRANSCRIPTS_APPROVED`, `VT_THUMBNAILS_APPROVED`, `DATABASE_*`). An unset
+variable arrives blank, which ViralTrack's configuration treats as its default. Adding a new retention setting
+means adding it to that list. Tests: `tests/test_compose_safety.py`.
 
 | Setting | Value | Effect |
 |---|---|---|

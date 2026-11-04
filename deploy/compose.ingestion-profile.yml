@@ -1,8 +1,9 @@
-# ViralTrack ingestion profile for the foundation's background worker.
-# Layered on docker-compose.yml; the upstream compose file stays unchanged:
+# ViralTrack ingestion profile for the foundation's services (web, worker, mcp, mcp-http).
 #
-#   docker compose -f docker-compose.yml -f deploy/compose.ingestion-profile.yml up -d web worker retention
-#   (add -f deploy/compose.managed-db.yml for a managed database)
+# This file is part of the DEFAULT stack: docker-compose.yml lists it in its `include` entry, next
+# to the upstream compose file, and compose merges it over the upstream services. Plain
+# `docker compose up` / `docker compose config` therefore already apply it; nothing has to be
+# remembered. (Passing it again with -f is harmless.) The upstream compose file stays unchanged.
 #
 # Owner decision 2026-11-04: no thumbnail downloads and no thumbnail archive. Raw discovery
 # stores only the thumbnail URL that videos.list returns. Keys under `environment` beat the

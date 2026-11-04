@@ -11,17 +11,33 @@
 #
 # Dashboard: http://localhost:8080  (the foundation's `web` service)
 
+# The include lists two files: compose merges the second over the first (compose spec, "include"
+# with several paths). The thumbnail-safe ingestion profile is therefore part of the default stack;
+# no `-f` flag and no variable has to be remembered. See docs/phase-2/INGESTION_PROFILE.md.
 include:
-  - path: upstream/youtube-niche-finder/docker-compose.yml
+  - path:
+      - upstream/youtube-niche-finder/docker-compose.yml
+      - deploy/compose.ingestion-profile.yml
 
 services:
   retention:
     build: .
     image: viraltrack:latest
-    env_file:
-      - path: .env
-        required: false
+    # No env_file: the root .env also holds YOUTUBE_API_KEY, which retention never needs. Only the
+    # variables below reach the container (an unset one arrives blank and means "default").
     environment:
+      VT_ENV: "${VT_ENV:-}"
+      VT_LOG_LEVEL: "${VT_LOG_LEVEL:-}"
+      VT_RETENTION_APPLY: "${VT_RETENTION_APPLY:-}"
+      VT_RETENTION_YOUTUBE_STATS_DAYS: "${VT_RETENTION_YOUTUBE_STATS_DAYS:-}"
+      VT_RETENTION_YOUTUBE_TEXT_DAYS: "${VT_RETENTION_YOUTUBE_TEXT_DAYS:-}"
+      VT_YOUTUBE_ANALYTICS_AMENDMENT_ACCEPTED: "${VT_YOUTUBE_ANALYTICS_AMENDMENT_ACCEPTED:-}"
+      VT_TRANSCRIPTS_APPROVED: "${VT_TRANSCRIPTS_APPROVED:-}"
+      VT_THUMBNAILS_APPROVED: "${VT_THUMBNAILS_APPROVED:-}"
+      DATABASE_SSL_MODE: "${DATABASE_SSL_MODE:-}"
+      DATABASE_CONNECT_TIMEOUT: "${DATABASE_CONNECT_TIMEOUT:-}"
+      DATABASE_STATEMENT_TIMEOUT: "${DATABASE_STATEMENT_TIMEOUT:-}"
+      DATABASE_APPLICATION_NAME: "${DATABASE_APPLICATION_NAME:-}"
       # The foundation's database. Default: the compose `postgres` service. Set DATABASE_URL
       # (and DATABASE_PROVIDER) in .env for a managed database; see .env.example.
       DATABASE_PROVIDER: "${DATABASE_PROVIDER:-local}"
