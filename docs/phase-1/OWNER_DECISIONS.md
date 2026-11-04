@@ -101,5 +101,5 @@ Options:
 
 ## F. Already decided by the owner
 
-You committed and pushed Phase 1 (`aba23d6`, `355cd19`) and Phase 1.1 (`e035b11`); GitHub CI passed on all of
-them. The Phase 1.2 changes are not committed.
+You committed and pushed Phase 1 (`aba23d6`, `355cd19`) and Phase 1.1 (`e035b11`) and Phase 1.2 (`4a0802d`);
+GitHub CI passed on all of them.

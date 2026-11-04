@@ -1,6 +1,6 @@
 # Phase 1.2 Release Gate
 
-Date: 2026-11-03. Base: `e035b11` (Phase 1.1, pushed, CI green) plus the uncommitted Phase 1.2 changes.
+Date: 2026-11-03. Phase 1.2 committed and pushed by the owner as `4a0802d`; GitHub CI green.
 
 ## Verdict: `READY_FOR_PHASE_2_WITH_LIMITATIONS`
 
@@ -10,7 +10,7 @@ Date: 2026-11-03. Base: `e035b11` (Phase 1.1, pushed, CI green) plus the uncommi
 |---|---|
 | Foundation unmodified | Submodule clean at `d872014`. The CI pin check passes |
 | Upstream suite | 1,786 / 0 / 0 (Linux Docker, Phase 1.1; submodule unchanged since) |
-| ViralTrack suite | 67 / 0 / 0 locally (Postgres + live demo foundation). GitHub CI on `e035b11`: 64 passed, 1 skipped |
+| ViralTrack suite | 67 / 0 / 0 locally (Postgres + live demo foundation). GitHub CI on `e035b11`: 64 passed, 1 skipped; on `4a0802d` (Phase 1.2): 66 passed, 1 skipped |
 | Metric inventory | 16 rules reconciled: 6 ALLOWED, 8 RESTRICTED, 2 INTERNAL_ONLY (METRIC_INVENTORY_AND_APPROVAL.md) |
 | Restricted metrics cannot leave ViralTrack | Fields: allow-list mapping + policy + `Content` invariant. Sorting refused. Filters: only allow-listed params are ever sent. Search uses the same path. ViralTrack has no export, API or MCP. Logs are masked |
 | Capabilities | Registry builds YouTube only. `get_trending_content`, `get_content` raise `UnsupportedCapability` with no network call. `HASHTAGS` and `AUDIO` are declared unsupported. Instagram and TikTok have no provider, so nothing claims Reels, TikTok, trending feeds or audio |
@@ -30,7 +30,6 @@ Date: 2026-11-03. Base: `e035b11` (Phase 1.1, pushed, CI green) plus the uncommi
 | 5 | acceleration and views_per_follower confirmation; Shorts label policy | Owner / counsel (B, C) |
 | 6 | Transcripts legal review; upstream still accepts manual pastes until the next run | Counsel (D) |
 | 7 | `collected_at` unknown for list items (upstream does not expose it) | Upstream contribution |
-| 8 | Phase 1.2 changes not yet in GitHub CI | Owner (commit/push) |
 
 ## Security and licensing
 

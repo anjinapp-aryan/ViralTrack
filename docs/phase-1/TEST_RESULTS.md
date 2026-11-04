@@ -16,7 +16,10 @@ The upstream suite was not re-run in Phase 1.2: the submodule is unchanged since
 be purged.
 
 GitHub CI on the pushed Phase 1.1 commit `e035b11` (run 41675734597): **success**, 64 passed, 1 skipped (live),
-upstream-suite skipped by design. Phase 1.2 changes: **`GITHUB_CI_NOT_YET_EXECUTED`**.
+upstream-suite skipped by design.
+
+GitHub CI on the pushed Phase 1.2 commit `4a0802d` (run 41677704227): **success**, 66 passed, 1 skipped
+(live), upstream-suite skipped by design.
 
 ## Phase 1.1 (2026-11-03, working tree on top of `355cd19`)
 
