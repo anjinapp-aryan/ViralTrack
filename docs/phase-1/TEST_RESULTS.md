@@ -1,5 +1,25 @@
 # Test Results
 
+## Phase 2 Batch 3: ingestion profile and retention verification (2026-11-04, working tree on top of `76f9335`)
+
+| Suite | Passed | Failed | Skipped | Duration |
+|---|---:|---:|---:|---:|
+| ViralTrack, all, against pgserver PostgreSQL 16.2 with pgvector 0.6.2 (`VT_TEST_REQUIRE_PGVECTOR=1`) | **202** | **0** | 2 (live foundation not running) | 19.2 s |
+| ViralTrack, plain `pytest` | 179 | 0 | 25 (Postgres and live) | 13.6 s |
+| `tests/test_retention_batch3.py` with Postgres | 21 | 0 | 0 | 2.7 s |
+| Lint (ruff 0.16.9) | clean | | | |
+| Compose: base; base + ingestion profile; base + managed-db + ingestion profile | render | | | |
+| Upstream submodule | unmodified at `d872014` | | | |
+
+Mutation check: making the expiry clock `updated_at`-first fails
+`test_expiry_uses_the_text_clock_and_a_stats_refresh_cannot_extend_it`; the change was reverted and the file is
+identical to the implementation tested.
+
+GitHub CI on `76f9335` (Batch 2 and the database work, committed together by the owner; run 41841522121):
+**success**, 181 passed, 2 skipped. Batch 3: **`GITHUB_CI_NOT_YET_EXECUTED`**.
+
+Evidence and findings: docs/phase-2/INGESTION_PROFILE.md.
+
 ## Database provider configuration (2026-11-04, working tree; not a Phase 2 batch)
 
 | Suite | Passed | Failed | Skipped | Duration |

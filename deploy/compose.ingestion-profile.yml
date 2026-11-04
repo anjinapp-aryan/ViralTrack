@@ -1,0 +1,28 @@
+# ViralTrack ingestion profile for the foundation's background worker.
+# Layered on docker-compose.yml; the upstream compose file stays unchanged:
+#
+#   docker compose -f docker-compose.yml -f deploy/compose.ingestion-profile.yml up -d web worker retention
+#   (add -f deploy/compose.managed-db.yml for a managed database)
+#
+# Owner decision 2026-11-04: no thumbnail downloads and no thumbnail archive. Raw discovery
+# stores only the thumbnail URL that videos.list returns. Keys under `environment` beat the
+# foundation's env_file, so a stale upstream .env cannot switch these back on.
+# Documented in docs/phase-2/INGESTION_PROFILE.md.
+
+x-ingestion-env: &ingestion-env
+  # worker step that downloads i.ytimg.com images into thumbnail_archive
+  WORKER_THUMBS: "0"
+  # worker step and API route that download thumbnails to compute image vectors
+  WORKER_THUMB_EMBED: "0"
+  # YouTube policy: no AI/LLM enrichment of API data in this deployment
+  LLM_PROVIDER: "none"
+
+services:
+  web:
+    environment: *ingestion-env
+  worker:
+    environment: *ingestion-env
+  mcp:
+    environment: *ingestion-env
+  mcp-http:
+    environment: *ingestion-env

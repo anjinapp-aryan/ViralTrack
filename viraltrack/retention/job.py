@@ -19,6 +19,7 @@ from viraltrack.retention.policy import (
     CHANNEL_DEPENDENTS,
     DERIVED_META_KEYS,
     OWN_CHANNEL_DEPENDENTS,
+    THUMBNAIL_TABLES,
     TRANSCRIPT_TABLES,
     VIDEO_DEPENDENTS,
     Window,
@@ -141,6 +142,21 @@ def run(conn, settings: RetentionSettings, schema: str = "public",
                 if _columns(cur, table):
                     cur.execute(f"DELETE FROM {table}")
                     report.affected[f"transcripts_unapproved.{table}"] = cur.rowcount
+
+        # 3c. Thumbnail archiving is not approved: remove every stored image.
+        if not settings.thumbnails_approved:
+            for table in THUMBNAIL_TABLES:
+                if _columns(cur, table):
+                    cur.execute(f"DELETE FROM {table}")
+                    report.affected[f"thumbnails_unapproved.{table}"] = cur.rowcount
+            # Image vectors computed from downloaded thumbnails are derived from them.
+            wanted = ("thumb_embedding", "thumb_embedding_v", "thumb_embedded_at")
+            present = [c for c in wanted if c in vcols]
+            if present:
+                sets = ", ".join(f"{c} = NULL" for c in present)
+                cur.execute(f"UPDATE videos SET {sets} WHERE " +
+                            " OR ".join(f"{c} IS NOT NULL" for c in present))
+                report.affected["thumbnails_unapproved.videos.image_vectors"] = cur.rowcount
 
         # 4. Own channels whose authorization was not re-verified within the text window.
         if {"user_id", "channel_id", "connected_at", "last_synced_at"} <= _columns(cur, "own_channels"):

@@ -99,6 +99,9 @@ class RetentionSettings:
     # False until the transcript legal/platform review approves storing them:
     # every retention run then deletes all transcripts the foundation holds.
     transcripts_approved: bool
+    # False until the owner approves archiving thumbnail images: every retention run
+    # then deletes the foundation's thumbnail_archive (Phase 2 Batch 3).
+    thumbnails_approved: bool
 
 
 # --- database -------------------------------------------------------------
@@ -293,6 +296,7 @@ class Settings:
             "retention.youtube_text_days": self.retention.youtube_text_days,
             "retention.apply": self.retention.apply,
             "retention.transcripts_approved": self.retention.transcripts_approved,
+            "retention.thumbnails_approved": self.retention.thumbnails_approved,
         }
 
 
@@ -339,6 +343,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
             youtube_text_days=text_days,
             apply=_bool(env, "VT_RETENTION_APPLY", False),
             transcripts_approved=_bool(env, "VT_TRANSCRIPTS_APPROVED", False),
+            thumbnails_approved=_bool(env, "VT_THUMBNAILS_APPROVED", False),
         ),
     )
 

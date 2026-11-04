@@ -65,7 +65,9 @@ TABLES: dict[str, TableRule] = {
     "video_changes": TableRule((R,), Action.PURGE, "Old and new titles/thumbnails (text window)."),
     "video_categories": TableRule((R,), Action.PURGE, "Category names from videoCategories.list."),
     "thumbnail_archive": TableRule((R,), Action.PURGE,
-                                   "Stored thumbnail image bytes (text window)."),
+                                   "Stored thumbnail image bytes. Not approved (owner decision "
+                                   "2026-11-04): every run deletes all of them until "
+                                   "VT_THUMBNAILS_APPROVED=true; after approval, text window."),
     "video_niches": TableRule((IDN, U), Action.CASCADE, "Links videos to user niches."),
     # --- derived from API data ----------------------------------------------
     "video_insights": TableRule((D, C), Action.PURGE, "LLM analyses of videos/comments."),
@@ -148,6 +150,8 @@ OWN_CHANNEL_DEPENDENTS = ("own_video_metrics", "own_channel_daily")
 
 # Transcript storage stays off until reviewed (docs/phase-1/OWNER_DECISIONS.md, D).
 TRANSCRIPT_TABLES = ("transcript_chunks", "transcripts", "transcript_requests")
+# Image bytes downloaded from i.ytimg.com by the foundation's worker (WORKER_THUMBS).
+THUMBNAIL_TABLES = ("thumbnail_archive",)
 
 
 @dataclass(frozen=True)

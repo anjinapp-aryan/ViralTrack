@@ -8,8 +8,8 @@ approval.
 | Batch | Status |
 |---|---|
 | 1 | **Done**: committed by the owner as `9825f2d`; GitHub CI green (70 passed, 1 skipped) |
-| 2 | Approved with 12 conditions; implemented in the working tree; at its acceptance gate; not committed |
-| 3 | Needs a separate approval after Batch 2. It includes the owner's retention verification requirements |
+| 2 | **Done**: committed by the owner together with the database work as `76f9335`; GitHub CI green (181 passed, 2 skipped) |
+| 3 | Approved 2026-11-04; implemented in the working tree (docs/phase-2/INGESTION_PROFILE.md); at its acceptance gate; not committed |
 | 4 | **Deferred**: no FastAPI, uvicorn or new API service in this phase |
 | 5 | Not started |
 
