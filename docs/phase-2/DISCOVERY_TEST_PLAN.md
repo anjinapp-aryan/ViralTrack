@@ -33,7 +33,7 @@ shown to return real items. This plan makes that observable.
 | D7 | `niche="<label>"` for the keyword niche | Only items collected under that niche |
 | D8 | `limit` 1 and 100 | Honoured |
 | D9 | Request check (recorded transport) | Every discovery call sends `min_views_per_subscriber=0` |
-| D10 | Provenance of all items | `collected_at` None; `ingested_at` aware UTC inside the collection window; raw and derived separated |
+| D10 | Provenance of all items | `collected_at` None; `foundation_first_seen_at` aware UTC inside the collection window; raw and derived separated |
 | D11 | Quota check | `/api/health` units and search calls identical before and after D1 to D10 (discovery spends nothing) |
 
 ## 4. Offline groundwork (no quota, can run now)

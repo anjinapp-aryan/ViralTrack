@@ -21,6 +21,8 @@ Provenance  provider  (ViralTrack provider id, "youtube")
             exposure  ALLOWED | RESTRICTED | INTERNAL_ONLY; Content accepts only ALLOWED
             source    ("youtube-data-api" = raw platform data, "niche-finder" = computed by the foundation)
             collected_at  (when the provider read the value; None = unknown, never guessed)
+            foundation_first_seen_at  (UTC; when the foundation first stored the item, from its firstSeenAt;
+                          None when absent or without an offset. Not collected_at, not ViralTrack's receive time)
             kind      RAW | DERIVED
             note      (for derived values: "Calculated by niche-finder from YouTube data; not a YouTube metric")
 ```

@@ -19,6 +19,7 @@ from viraltrack.domain import (
     ProviderAuthFailed,
     ProviderCredentialsMissing,
     ProviderError,
+    ProviderTimeout,
     ProviderUnavailable,
     QuotaExhausted,
     RateLimited,
@@ -72,6 +73,18 @@ class FoundationClient:
         try:
             resp = self._http.request(method, f"{self._base_url}{path}", params=params, json=json,
                                       headers={**self._headers, **(headers or {})}, timeout=timeout)
+        except (httpx.ReadTimeout, httpx.WriteTimeout) as exc:
+            # The request was (or may have been) delivered: the foundation can still finish it.
+            raise ProviderTimeout(
+                PROVIDER_ID,
+                f"client timeout after waiting for {method} {path}; this is NOT a confirmed failure: "
+                "the foundation may still complete the operation and a collection may already have "
+                "spent quota. It was not retried. Check /api/health before trying again.",
+                outcome_unknown=True) from exc
+        except (httpx.ConnectTimeout, httpx.PoolTimeout) as exc:
+            raise ProviderTimeout(
+                PROVIDER_ID, f"client timeout connecting to the foundation at {self._base_url}; "
+                "the request was not delivered", outcome_unknown=False) from exc
         except httpx.TransportError as exc:
             raise ProviderUnavailable(PROVIDER_ID,
                                       f"foundation unreachable at {self._base_url}: {exc}") from exc

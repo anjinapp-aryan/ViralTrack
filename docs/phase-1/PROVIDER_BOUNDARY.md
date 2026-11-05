@@ -91,6 +91,7 @@ These methods are **internal-only**: no ViralTrack API, CLI, UI or MCP exposes t
 | Situation | Exception |
 |---|---|
 | Foundation unreachable | `ProviderUnavailable` |
+| Client timeout (read/write: the foundation may still finish; connect/pool: nothing delivered) | `ProviderTimeout`, a subclass of `ProviderUnavailable`, with `outcome_unknown`. Never retried for collection POSTs |
 | 404 | `NotFound` (message from the foundation, e.g. "Run collect_channel / track_channel first.") |
 | 401/403 (multi-user mode) | `ProviderAuthFailed` (a `ProviderError`) with a hint to set `VT_YOUTUBE_FOUNDATION_TOKEN` |
 | 403 `PlanLimit` / `FeatureOff` / `ReadOnlyView` | `ProviderError` (a refusal, not a credentials problem) |

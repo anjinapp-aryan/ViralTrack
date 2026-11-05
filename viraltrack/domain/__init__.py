@@ -6,6 +6,7 @@ from viraltrack.domain.errors import (
     ProviderAuthFailed,
     ProviderCredentialsMissing,
     ProviderError,
+    ProviderTimeout,
     ProviderUnavailable,
     QuotaExhausted,
     RateLimited,
@@ -27,7 +28,7 @@ from viraltrack.domain.models import (
 
 __all__ = [
     "Capability", "CapabilityInfo", "PlatformCapabilities",
-    "ConfigError", "NotFound", "ProviderError", "ProviderUnavailable",
+    "ConfigError", "NotFound", "ProviderError", "ProviderTimeout", "ProviderUnavailable",
     "UnsupportedCapability", "ViralTrackError",
     "IngestionDisabled", "ProviderAuthFailed", "ProviderCredentialsMissing", "QuotaExhausted",
     "RateLimited",

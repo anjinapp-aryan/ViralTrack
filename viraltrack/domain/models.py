@@ -51,16 +51,19 @@ class Provenance:
     adapter: str             # which ViralTrack adapter produced it, e.g. "youtube/niche-finder-http"
     exposure: Exposure       # ALLOWED, or the reason it may not be shown
     note: str | None = None  # formula or caveat, shown to users for derived values
-    # When the provider's store FIRST ingested the item (UTC). Not when this value was read from
-    # the platform: that is `collected_at`, which stays None while the real capture time is
-    # unknown. Never a substitute for it. A naive datetime is refused.
-    ingested_at: datetime | None = None
+    # The upstream (foundation) store's own "first seen" time for the item, in UTC: when the
+    # foundation first inserted the row. It is neither ViralTrack's receive time (that is
+    # `Content.retrieved_at`) nor the time the value was read from the platform (that is
+    # `collected_at`, which stays None while unknown). Never a substitute for either.
+    # A naive datetime is refused.
+    foundation_first_seen_at: datetime | None = None
 
     def __post_init__(self):
-        if self.ingested_at is not None:
-            if self.ingested_at.tzinfo is None:
-                raise ValueError("ingested_at must be timezone-aware (UTC)")
-            object.__setattr__(self, "ingested_at", self.ingested_at.astimezone(timezone.utc))
+        if self.foundation_first_seen_at is not None:
+            if self.foundation_first_seen_at.tzinfo is None:
+                raise ValueError("foundation_first_seen_at must be timezone-aware (UTC)")
+            object.__setattr__(self, "foundation_first_seen_at",
+                               self.foundation_first_seen_at.astimezone(timezone.utc))
 
 
 @dataclass(frozen=True)

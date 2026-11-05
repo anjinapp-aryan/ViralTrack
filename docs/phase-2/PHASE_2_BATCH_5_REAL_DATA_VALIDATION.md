@@ -11,7 +11,8 @@ Date: 2026-11-04 (follow-up 2026-11-05). Verdict: **PASS_WITH_LIMITATIONS**. No 
 | Item | Result |
 |---|---|
 | `collected_at` | Stays `None` while the real capture time is unavailable. Unchanged, now tested |
-| `ingested_at` | New optional field on `Provenance`: UTC, set from the foundation's `firstSeenAt` (when it first stored the item). Not a capture time, never a substitute for `collected_at`. A naive value is refused; a missing or offset-less `firstSeenAt` gives `None` |
+| `foundation_first_seen_at` | New optional field on `Provenance`: UTC, from the foundation's `firstSeenAt`. **Verified upstream meaning:** `videos.first_seen_at` and `channels.first_seen_at` are set once, by the foundation's own `INSERT ... ON CONFLICT DO NOTHING` (value: the row's `updated_at`, else the foundation's clock), and its upserts never rewrite them. So it is the **foundation's** first-insert time: not ViralTrack's ingestion time and not a capture time. An earlier draft named it `ingested_at`; that name was wrong and was removed (never released, so no alias). ViralTrack's own receive time is the existing `Content.retrieved_at`; ViralTrack persists nothing, so no separate `ingested_at` is added. It is never copied into `collected_at` |
+| Timeout errors | A client timeout raises `ProviderTimeout` (a subclass of `ProviderUnavailable`). A read or write timeout has `outcome_unknown=True`: the request may have reached the foundation, which can still finish it, and a collection may already have spent quota. A connect or pool timeout has `outcome_unknown=False` (nothing delivered). A confirmed foundation failure is an HTTP error (`ProviderError` with a status) and is never a timeout. No POST is retried automatically |
 | Collection timeout | New `VT_YOUTUBE_COLLECT_TIMEOUT_SECONDS`, default 120 (1 to 900), used only for collection POSTs. Reads keep `VT_YOUTUBE_TIMEOUT_SECONDS` (20). A timed-out collection is never retried |
 | Test database | `vt_b5` dropped after verification; see section 7 |
 | Discovery | Test plan only: [DISCOVERY_TEST_PLAN.md](DISCOVERY_TEST_PLAN.md). No further YouTube request was made |
@@ -46,7 +47,7 @@ were set by hand. The rendered Compose configuration is covered by `tests/test_c
 - **Totals.** Two collection requests, 70 videos, 19 channels, 70 statistics snapshots.
 - **The client lost the result of step 2** (the 20-second read timeout applied then; collection requests now default to 120 seconds). The first keyword search made the foundation download its text embedding
   model from Hugging Face (50 videos were embedded; this is not a thumbnail), so the answer took longer than
-  ViralTrack's 20-second timeout and ViralTrack raised `ProviderUnavailable`. The foundation finished the work. The
+  ViralTrack's 20-second timeout and ViralTrack raised `ProviderUnavailable` (now `ProviderTimeout`, which says the outcome is unknown). The foundation finished the work. The
   request was **not retried**, so nothing was spent twice. The outcome of step 2 is known from the foundation's quota
   meter and the database, not from an `IngestionResult`.
 
@@ -81,8 +82,9 @@ Checked through ViralTrack's provider (`search_content`, read-only) and directly
 - All timestamps are timezone-aware. `published_at` in the database ranges from 2016-01-22 to 2026-10-29; none is in the future.
 - Foundation rows: `first_seen_at` and `updated_at` are ISO-8601 with `+00:00`, 2026-11-04T17:38:33Z to 17:38:40Z;
   `texts_refreshed_at` is empty for all 70 videos (only the freshness job sets it).
-- **Follow-up:** each metric's provenance now also carries `ingested_at`, the foundation's `firstSeenAt` in UTC, so a
-  consumer can see when the item entered the store. It says nothing about when a count was read from YouTube.
+- **Follow-up:** each metric's provenance now also carries `foundation_first_seen_at`, the foundation's `firstSeenAt` in UTC, so a
+  consumer can see when the foundation first stored the item. It says nothing about when a count was read from YouTube
+  and is not ViralTrack's ingestion time.
 - **Limitation: `Provenance.collected_at` was `None` for all 150 metric values.** The foundation's read API
   (`/api/search`, `/api/viral`) returns `firstSeenAt` but no statistics-capture time, and ViralTrack records an unknown time
   as `None` rather than guessing (project rule). The retention clock is unaffected because it reads the database, but a
@@ -147,7 +149,7 @@ With local PostgreSQL 16.2 + pgvector (`VT_TEST_REQUIRE_PGVECTOR=1`):
 1. Client timeout on the first keyword search (embedding-model download); result recovered from the meter. Addressed
    by the 120-second collection timeout, which was **not** re-tested against the live foundation (no further quota was
    spent); unit tests cover the setting and the single-attempt behaviour.
-2. `collected_at` unknown for every metric (section 4); `ingested_at` is added beside it, not in its place, and was
+2. `collected_at` unknown for every metric (section 4); `foundation_first_seen_at` is added beside it, not in its place, and was
    verified against fixtures only, not the live foundation.
 3. The channel is probably not small (section 2).
 4. Quota figures come from the foundation, not the Google console (section 3).

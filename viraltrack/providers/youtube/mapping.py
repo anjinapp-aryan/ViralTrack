@@ -96,8 +96,9 @@ def _check_ids(ctx: MappingContext, video_id: str | None, channel_id: str) -> No
         raise ProviderError(PROVIDER_ID, f"{channel_id!r} is not a YouTube channel id")
 
 
-def ingested_time(value) -> datetime | None:
-    """The foundation's `firstSeenAt` (ISO-8601 with an offset) as an aware UTC datetime.
+def foundation_first_seen_time(value) -> datetime | None:
+    """The foundation's `firstSeenAt` (`first_seen_at`: set once, when the foundation first inserted
+    the row; its upserts never rewrite it) as an aware UTC datetime.
     A missing, malformed or offset-less value is None: unknown, never assumed to be UTC."""
     parsed = parse_time(value)
     if parsed is None or parsed.tzinfo is None:
@@ -106,14 +107,14 @@ def ingested_time(value) -> datetime | None:
 
 
 def raw_provenance(ctx: MappingContext, collected_at: datetime | None,
-                   ingested_at: datetime | None = None) -> Provenance:
+                   first_seen: datetime | None = None) -> Provenance:
     return Provenance(provider=PROVIDER_ID, source=RAW_SOURCE, collected_at=collected_at,
                       kind=MetricKind.RAW, origin=ctx.origin, adapter=ADAPTER_ID,
-                      exposure=Exposure.ALLOWED, ingested_at=ingested_at)
+                      exposure=Exposure.ALLOWED, foundation_first_seen_at=first_seen)
 
 
 def _derived(ctx: MappingContext, item: dict,
-             ingested_at: datetime | None = None) -> tuple[Metric, ...]:
+             first_seen: datetime | None = None) -> tuple[Metric, ...]:
     out = []
     for key, name in DERIVED_VIDEO_METRICS.items():
         value = _num(item.get(key))
@@ -124,7 +125,7 @@ def _derived(ctx: MappingContext, item: dict,
         rule = ctx.policy.rules[name]
         prov = Provenance(provider=PROVIDER_ID, source=DERIVED_SOURCE, collected_at=None,
                           kind=MetricKind.DERIVED, origin=ctx.origin, adapter=ADAPTER_ID,
-                          exposure=Exposure.ALLOWED, ingested_at=ingested_at,
+                          exposure=Exposure.ALLOWED, foundation_first_seen_at=first_seen,
                           note=f"Calculated by niche-finder from YouTube data; not a YouTube "
                                f"metric. {rule.basis}")
         out.append(Metric(name=name, value=value, provenance=prov))
@@ -156,9 +157,10 @@ def map_video(item: dict, ctx: MappingContext) -> Content:
 
     # niche-finder does not report per-item fetch times on these endpoints, so the time the
     # numbers were read from YouTube (`collected_at`) is unknown: None, not invented. What it does
-    # report is `firstSeenAt`, when it first stored the item; that goes in `ingested_at`.
-    ingested = ingested_time(item.get("firstSeenAt"))
-    raw = raw_provenance(ctx, None, ingested)
+    # report is `firstSeenAt`, when it first stored the item: kept as `foundation_first_seen_at`.
+    # ViralTrack's own receive time is `Content.retrieved_at`.
+    first_seen = foundation_first_seen_time(item.get("firstSeenAt"))
+    raw = raw_provenance(ctx, None, first_seen)
     handle = item.get("channelUrl")
     followers = _num(item.get("channelSubscribers"))
     uploads = _num(item.get("channelVideoCount"))
@@ -189,7 +191,7 @@ def map_video(item: dict, ctx: MappingContext) -> Content:
         language=item.get("language"),
         category=item.get("category"),
         metrics=_raw(item, RAW_VIDEO_METRICS, raw),
-        derived=_derived(ctx, item, ingested),
+        derived=_derived(ctx, item, first_seen),
         retrieved_at=ctx.retrieved_at,
         provider=PROVIDER_ID,
     )

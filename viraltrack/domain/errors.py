@@ -27,6 +27,17 @@ class ProviderUnavailable(ProviderError):
     """The backend could not be reached at all."""
 
 
+class ProviderTimeout(ProviderUnavailable):
+    """ViralTrack stopped waiting. This is a CLIENT-side timeout, not a failure reported by the
+    backend: for a request that was already sent (`outcome_unknown`), the backend may still finish
+    the operation, and a collection may already have spent quota. Never retried automatically."""
+
+    def __init__(self, provider: str, message: str, status: int | None = None,
+                 outcome_unknown: bool = True):
+        super().__init__(provider, message, status)
+        self.outcome_unknown = outcome_unknown
+
+
 class NotFound(ProviderError):
     pass
 
