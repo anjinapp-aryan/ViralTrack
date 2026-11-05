@@ -1,6 +1,22 @@
 # Phase 2 Batch 5: controlled real-data validation
 
-Date: 2026-11-04. Verdict: **PASS_WITH_LIMITATIONS**. Not committed. No retention deletion was run.
+Date: 2026-11-04 (follow-up 2026-11-05). Verdict: **PASS_WITH_LIMITATIONS**. No retention deletion was run.
+
+**Execution environment: the real-data run was performed natively on Windows 11, not in Docker.** The foundation
+(`uvicorn api:app`) and PostgreSQL 16.2 ran as host processes. The Docker Compose stack, its rendered profile and the
+`retention` container were **not** started during this run; they are covered only by the render-based tests.
+
+## Follow-up (2026-11-05)
+
+| Item | Result |
+|---|---|
+| `collected_at` | Stays `None` while the real capture time is unavailable. Unchanged, now tested |
+| `ingested_at` | New optional field on `Provenance`: UTC, set from the foundation's `firstSeenAt` (when it first stored the item). Not a capture time, never a substitute for `collected_at`. A naive value is refused; a missing or offset-less `firstSeenAt` gives `None` |
+| Collection timeout | New `VT_YOUTUBE_COLLECT_TIMEOUT_SECONDS`, default 120 (1 to 900), used only for collection POSTs. Reads keep `VT_YOUTUBE_TIMEOUT_SECONDS` (20). A timed-out collection is never retried |
+| Test database | `vt_b5` dropped after verification; see section 7 |
+| Discovery | Test plan only: [DISCOVERY_TEST_PLAN.md](DISCOVERY_TEST_PLAN.md). No further YouTube request was made |
+
+Non-sensitive evidence kept: [evidence/batch5_evidence.json](evidence/batch5_evidence.json) (aggregates only).
 
 ## 1. Environment
 
@@ -28,7 +44,7 @@ were set by hand. The rendered Compose configuration is covered by `tests/test_c
   probably **not small**. Only this one channel was collected. The other 18 channels in the database (19 in total) are
   authors of the keyword-search results, stored as part of that search; they were not collected separately.
 - **Totals.** Two collection requests, 70 videos, 19 channels, 70 statistics snapshots.
-- **The client lost the result of step 2.** The first keyword search made the foundation download its text embedding
+- **The client lost the result of step 2** (the 20-second read timeout applied then; collection requests now default to 120 seconds). The first keyword search made the foundation download its text embedding
   model from Hugging Face (50 videos were embedded; this is not a thumbnail), so the answer took longer than
   ViralTrack's 20-second timeout and ViralTrack raised `ProviderUnavailable`. The foundation finished the work. The
   request was **not retried**, so nothing was spent twice. The outcome of step 2 is known from the foundation's quota
@@ -65,6 +81,8 @@ Checked through ViralTrack's provider (`search_content`, read-only) and directly
 - All timestamps are timezone-aware. `published_at` in the database ranges from 2016-01-22 to 2026-10-29; none is in the future.
 - Foundation rows: `first_seen_at` and `updated_at` are ISO-8601 with `+00:00`, 2026-11-04T17:38:33Z to 17:38:40Z;
   `texts_refreshed_at` is empty for all 70 videos (only the freshness job sets it).
+- **Follow-up:** each metric's provenance now also carries `ingested_at`, the foundation's `firstSeenAt` in UTC, so a
+  consumer can see when the item entered the store. It says nothing about when a count was read from YouTube.
 - **Limitation: `Provenance.collected_at` was `None` for all 150 metric values.** The foundation's read API
   (`/api/search`, `/api/viral`) returns `firstSeenAt` but no statistics-capture time, and ViralTrack records an unknown time
   as `None` rather than guessing (project rule). The retention clock is unaffected because it reads the database, but a
@@ -109,9 +127,11 @@ and vectors, and a static test that the download code is reachable only from two
   rows). The transaction was rolled back.
 - A checksum of all 52 tables, taken from a separate connection before, after the CLI run and after the projected run,
   was identical each time. **Nothing was deleted.** `--apply` was never run.
-- **The real data is still in the local sandbox database `vt_b5`.** Under the 30-day rule it must be deleted or refreshed
-  by 2026-12-04 17:38 UTC. It will not delete itself while no retention service runs. The owner decides whether to drop
-  the database now.
+- **Test database removed (2026-11-05).** Before dropping, `vt_b5` was confirmed to be the validation database (70 videos,
+  19 channels, niche `home-espresso`, `first_seen_at` 2026-11-04, no open connection). It was dropped with
+  `DROP DATABASE vt_b5`; the local server now lists only `postgres`. The validation logs and a scratch output that
+  contained video titles were deleted too. Only the aggregates in `evidence/batch5_evidence.json` and this report remain.
+  No retention apply was run on any database.
 
 ## 8. Tests
 
@@ -124,12 +144,14 @@ With local PostgreSQL 16.2 + pgvector (`VT_TEST_REQUIRE_PGVECTOR=1`):
 
 ## 9. Failures and limitations
 
-1. Client timeout on the first keyword search (embedding-model download); result recovered from the meter. Consider
-   raising `VT_YOUTUBE_TIMEOUT_SECONDS` for collection calls, or pre-warming the model. Not changed.
-2. `collected_at` unknown for every metric (section 4).
+1. Client timeout on the first keyword search (embedding-model download); result recovered from the meter. Addressed
+   by the 120-second collection timeout, which was **not** re-tested against the live foundation (no further quota was
+   spent); unit tests cover the setting and the single-attempt behaviour.
+2. `collected_at` unknown for every metric (section 4); `ingested_at` is added beside it, not in its place, and was
+   verified against fixtures only, not the live foundation.
 3. The channel is probably not small (section 2).
 4. Quota figures come from the foundation, not the Google console (section 3).
-5. Run natively on Windows, not in Docker; the Compose-rendered profile did not start the process.
+5. Run natively on Windows, not in Docker; the Compose-rendered profile and the retention container did not run.
 6. The text-embedding model is downloaded from Hugging Face on first use (an outbound dependency outside YouTube).
 7. Discovery on this sample returned nothing under the default filters.
 8. One channel and one keyword only: a smoke validation, not a load or accuracy test. Shorts classification was not examined.

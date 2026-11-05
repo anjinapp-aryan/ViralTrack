@@ -1,0 +1,12 @@
+{
+  "note": "Aggregate, non-sensitive evidence from the Batch 5 validation of 2026-11-04. No API key, no titles, no video content, no channel statistics. Measured before the database vt_b5 was dropped.",
+  "environment": {"os": "Windows 11 (native, not Docker)", "postgresql": "16.2", "pgvector": "0.6.2", "foundation_commit": "d872014", "database": "vt_b5 (dropped)"},
+  "collection": {"channel_requests": 1, "keyword_requests": 1, "channel_video_cap": 20, "videos_stored": 70, "channels_stored": 19, "niche_links": 50, "statistics_snapshots": 70},
+  "quota_reported_by_foundation": {"units_after_channel": 3, "units_after_keyword": 6, "search_calls": 1, "budget_units": 50, "units_left_after": 9994, "search_calls_left_after": 99, "independent_check": "none (foundation counters only; Google console not consulted)"},
+  "timestamps_utc": {"first_seen_at_min": "2026-11-04T17:38:33.683039+00:00", "first_seen_at_max": "2026-11-04T17:38:40.187423+00:00", "texts_refreshed_at_set": 0, "published_at_year_range": "2016-2026", "published_in_future": 0},
+  "provenance_of_search_path": {"items_checked": 30, "origin": "real_provider_data", "collected_at_unknown": 150, "metric_values_checked": 150},
+  "metrics_exposed": {"raw": ["comments", "likes", "views"], "derived": ["engagement_rate", "views_per_hour_lifetime"], "restricted_or_internal_present": 0, "restricted_sort_refused": true},
+  "thumbnails_transcripts": {"thumbnail_archive_rows": 0, "videos_with_thumb_embedding": 0, "transcript_rows": 0, "text_embeddings_stored": 50, "worker_started": false},
+  "retention_report_only": {"cli_rows_affected": 0, "projected_plus_31_days_rows": 260, "tables_checksummed": 52, "changed_by_report_runs": false, "apply_run": false},
+  "tests_at_that_time": {"passed": 242, "failed": 0, "skipped": 2}
+}

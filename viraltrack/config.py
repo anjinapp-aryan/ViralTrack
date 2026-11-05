@@ -75,6 +75,9 @@ class IngestionSettings:
     max_items: int             # videos per creator collection / refresh
     min_units_left: int        # refuse when the foundation reports fewer units left today
     min_search_calls_left: int  # ... or fewer search calls left than this plus the pages asked for
+    # Seconds to wait for ONE collection request (POST). Longer than reads: the foundation's first
+    # keyword collection loads an embedding model. A timeout is never retried (quota may be spent).
+    collect_timeout_seconds: int = 120
 
 
 @dataclass(frozen=True)
@@ -337,6 +340,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
                 max_items=_int(env, "VT_YOUTUBE_MAX_VIDEOS_PER_COLLECT", 200, 1, 500),
                 min_units_left=_int(env, "VT_YOUTUBE_QUOTA_FLOOR_UNITS", 1000, 0, 1_000_000),
                 min_search_calls_left=_int(env, "VT_YOUTUBE_QUOTA_FLOOR_SEARCH_CALLS", 10, 0, 100),
+                collect_timeout_seconds=_int(env, "VT_YOUTUBE_COLLECT_TIMEOUT_SECONDS", 120, 1, 900),
             ),
         ),
         database=_database(env, environment),

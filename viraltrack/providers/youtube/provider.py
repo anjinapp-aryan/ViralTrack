@@ -119,7 +119,8 @@ class YouTubeProvider(PlatformProvider):
     def __init__(self, settings: YouTubeProviderSettings, http_client=None,
                  clock=lambda: datetime.now(timezone.utc)):
         self._client = FoundationClient(settings.base_url, settings.api_token,
-                                        settings.timeout_seconds, http_client=http_client)
+                                        settings.timeout_seconds, http_client=http_client,
+                                        collect_timeout_seconds=settings.ingestion.collect_timeout_seconds)
         self._clock = clock
         self._origin = mapping.ORIGINS[settings.data_origin]
         self.metric_policy = youtube_metric_policy(settings.approvals)

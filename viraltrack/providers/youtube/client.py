@@ -39,13 +39,15 @@ _REFUSALS = {"PlanLimit", "FeatureOff", "ReadOnlyView"}
 
 class FoundationClient:
     def __init__(self, base_url: str, api_token: str | None = None,
-                 timeout_seconds: float = 20, http_client: httpx.Client | None = None):
+                 timeout_seconds: float = 20, http_client: httpx.Client | None = None,
+                 collect_timeout_seconds: float = 120):
         # niche-finder defaults to Russian (NF_DEFAULT_LOCALE=ru) for hints and errors.
         headers = {"Accept": "application/json", "X-NF-Locale": "en"}
         if api_token:
             headers["Authorization"] = f"Bearer {api_token}"
         self._owns_client = http_client is None
         self._http = http_client or httpx.Client(timeout=timeout_seconds)
+        self._collect_timeout = collect_timeout_seconds
         self._base_url = base_url.rstrip("/")
         self._headers = headers
 
@@ -61,13 +63,15 @@ class FoundationClient:
         if path not in WRITE_ROUTES:
             raise ValueError(f"{path} is not a documented collection route")
         clean = {k: v for k, v in body.items() if v is not None}
-        return self._send("POST", path, json=clean, headers=CLIENT_HEADER)
+        # One attempt only: a timed-out POST may already have spent YouTube quota.
+        return self._send("POST", path, json=clean, headers=CLIENT_HEADER,
+                          timeout=self._collect_timeout)
 
-    def _send(self, method: str, path: str, params: dict | None = None,
-              json: dict | None = None, headers: dict | None = None) -> dict:
+    def _send(self, method: str, path: str, params: dict | None = None, json: dict | None = None,
+              headers: dict | None = None, timeout=httpx.USE_CLIENT_DEFAULT) -> dict:
         try:
             resp = self._http.request(method, f"{self._base_url}{path}", params=params, json=json,
-                                      headers={**self._headers, **(headers or {})})
+                                      headers={**self._headers, **(headers or {})}, timeout=timeout)
         except httpx.TransportError as exc:
             raise ProviderUnavailable(PROVIDER_ID,
                                       f"foundation unreachable at {self._base_url}: {exc}") from exc
