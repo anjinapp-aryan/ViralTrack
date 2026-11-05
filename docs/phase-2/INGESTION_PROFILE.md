@@ -52,6 +52,14 @@ The override sets these on `web`, `worker`, `mcp` and `mcp-http`. Keys under `en
 `env_file`, so a stale upstream `.env` cannot turn them back on. What raw discovery still stores for a thumbnail
 is the URL string that `videos.list` returns (`videos.thumbnail`), not an image.
 
+**Keyword collection and the publication window (Phase 3 D2).** `collect_query(text, ..., period=None)` can pass
+`period` (`24h`, `7d`, `30d`, ...) to the foundation, which turns it into `publishedAfter` for `search.list`.
+Without a period the foundation collects the **all-time most viewed** videos for the keyword, which is what
+produced the old, large-channel sample in Batch 5. The foundation fixes the search order at view count and uses
+one niche per query, so the same query collected with different periods writes into the same niche. The window
+the foundation applied is returned as `IngestionResult.applied_since` (UTC, copied from its echo, never
+computed by ViralTrack).
+
 Recommended worker settings for one 10,000-unit project: upstream defaults, `WORKER_REGIONS` limited to the
 target markets, `WORKER_QUERIES` of at most about 20 terms (one `search.list` call each per day, from a bucket of
 100), and the thumbnail and LLM settings above. These are estimates from upstream's documented costs, to be

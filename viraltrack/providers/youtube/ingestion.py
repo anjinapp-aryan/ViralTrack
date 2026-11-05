@@ -7,7 +7,7 @@ the authoritative meter remains `/api/health` (`unitQuota.unitsToday`).
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from viraltrack.domain import ProviderError
 from viraltrack.providers.base import IngestionResult, QuotaStatus
@@ -16,6 +16,17 @@ from viraltrack.providers.youtube.client import PROVIDER_ID
 
 def _int(value) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _utc_time(value) -> datetime | None:
+    """An echoed ISO-8601 time with an offset (or Z) as aware UTC; None for anything else."""
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed.astimezone(timezone.utc) if parsed.tzinfo is not None else None
 
 
 def _counts(body: dict, prefix: str = "") -> dict[str, int]:
@@ -54,7 +65,8 @@ def collect_result(operation: str, body: dict, finished_at: datetime) -> Ingesti
     return IngestionResult(provider=PROVIDER_ID, operation=operation, finished_at=finished_at,
                            counts=_counts(body),
                            creator_id=creator if isinstance(creator, str) else None,
-                           quota_units_reported=units, search_calls_reported=calls)
+                           quota_units_reported=units, search_calls_reported=calls,
+                           applied_since=_utc_time(body.get("min_upload_date")))
 
 
 def refresh_result(body: dict, finished_at: datetime) -> IngestionResult:

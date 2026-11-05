@@ -79,6 +79,10 @@ class IngestionResult:
     creator_id: str | None = None
     quota_units_reported: int | None = None
     search_calls_reported: int | None = None
+    # Start of the publication window the backend says it applied to a keyword collection (UTC), copied from
+    # its echoed `min_upload_date`. None when no window applied or the backend echoed nothing usable;
+    # ViralTrack never works it out itself.
+    applied_since: datetime | None = None
 
 
 class PlatformProvider(ABC):
@@ -115,7 +119,7 @@ class PlatformProvider(ABC):
         self._unsupported(Capability.COLLECT_CREATOR)
 
     def collect_query(self, text: str, pages: int = 1, region: str | None = None,
-                      language: str | None = None) -> IngestionResult:
+                      language: str | None = None, period: str | None = None) -> IngestionResult:
         self._unsupported(Capability.COLLECT_QUERY)
 
     def refresh_stats(self, period: str = "7d", limit: int | None = None) -> IngestionResult:

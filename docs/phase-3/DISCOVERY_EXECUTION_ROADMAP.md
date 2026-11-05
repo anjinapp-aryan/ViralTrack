@@ -18,6 +18,13 @@ Deliverables: the six documents in `docs/phase-3/`. Open owner decisions are lis
 
 ## D1: offline discovery correctness tests
 
+**Status (2026-11-05): implemented, awaiting owner review. Not committed.** Report:
+[D1_OFFLINE_DISCOVERY_TEST_REPORT.md](D1_OFFLINE_DISCOVERY_TEST_REPORT.md). Delivered: adapter-parameter,
+upstream-semantics, funnel, failure-case and restricted-metric tests; a synthetic corpus; an offline runner for the
+real upstream API; the corrected Phase 2 discovery test plan. **Production code was not changed.** Nine verified
+defects and gaps are recorded as strict `xfail` tests that D2 and D3 must turn green (list in the report).
+D2 and D3 have not started.
+
 | | |
 |---|---|
 | Objective | Prove, offline, that every discovery call sends an explicit, non-restrictive filter set, and reproduce the zero-result mechanism and its fix |
@@ -32,6 +39,11 @@ Deliverables: the six documents in `docs/phase-3/`. Open owner decisions are lis
 | Approval | Owner approves D1 scope |
 
 ## D2: candidate generation and source integration
+
+**Status (2026-11-05): implemented as the keyword-collection `period` only, awaiting owner review. Not committed.**
+Report: [D2_IMPLEMENTATION_REPORT.md](D2_IMPLEMENTATION_REPORT.md). The dedicated CI job for the upstream-backed
+offline tests is implemented but its first run is pending: [D2_CI_IMPLEMENTATION_REPORT.md](D2_CI_IMPLEMENTATION_REPORT.md).
+D3 has not started.
 
 | | |
 |---|---|

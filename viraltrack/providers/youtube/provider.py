@@ -33,6 +33,8 @@ from viraltrack.providers.youtube.client import PROVIDER_ID, FoundationClient
 from viraltrack.providers.youtube.metric_policy import youtube_metric_policy
 
 _PERIOD = re.compile(r"^(all|\d{1,4}[hd])$")
+# Keyword collection: `all`, or a whole number of hours or days from 1 to 9999, lowercase, no leading zero.
+_COLLECT_PERIOD = re.compile(r"all|[1-9][0-9]{0,3}[hd]")
 _REGION = re.compile(r"^[A-Z]{2}$")
 _LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$")
 
@@ -95,6 +97,22 @@ def _check_period(period: str) -> str:
     if not _PERIOD.match(period):
         raise ValueError(f"period must look like 24h, 7d or all, got {period!r}")
     return period
+
+
+def _check_collect_period(period: str | None) -> str | None:
+    """The `period` to send with a keyword collection, or None to send none.
+
+    None and `all` both mean "no publication limit" and send nothing, so the request body is the one
+    ViralTrack always sent. Anything else must be exactly `N` + `h` or `d`, N from 1 to 9999. The foundation
+    would read an empty string as "no limit", accept `0h` and uppercase, and give `m` the meaning of 30 days;
+    none of that is accepted here, and nothing is normalised.
+    """
+    if period is None:
+        return None
+    if not isinstance(period, str) or not _COLLECT_PERIOD.fullmatch(period):
+        raise ValueError("period must be 'all' or a whole number of hours or days from 1 to 9999, "
+                         f"lowercase, such as 24h or 7d, got {period!r}")
+    return None if period == "all" else period
 
 
 def _path_id(value: str) -> str:
@@ -214,15 +232,16 @@ class YouTubeProvider(PlatformProvider):
         return ingestion.collect_result("collect_creator", answer, self._clock())
 
     def collect_query(self, text: str, pages: int = 1, region: str | None = None,
-                      language: str | None = None) -> IngestionResult:
+                      language: str | None = None, period: str | None = None) -> IngestionResult:
         self._require_ingestion()
         query = _ref(text)
         pages = self._cap(pages, "max_search_pages")
+        period = _check_collect_period(period)      # before any request, the health check included
         if region is not None and not _REGION.match(region):
             raise ValueError(f"region must be an ISO 3166-1 alpha-2 code like US, got {region!r}")
         if language is not None and not _LANGUAGE.match(language):
             raise ValueError(f"language must be a code like en or pt-BR, got {language!r}")
-        body = {"query": query, "pages": pages, "region": region, "language": language}
+        body = {"query": query, "pages": pages, "region": region, "language": language, "period": period}
         self._preflight(search_calls=pages)
         answer = self._post("/api/collect/niche", body)
         return ingestion.collect_result("collect_query", answer, self._clock())

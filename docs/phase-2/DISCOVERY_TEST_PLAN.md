@@ -24,7 +24,7 @@ shown to return real items. This plan makes that observable.
 
 | # | Query | Expect |
 |---|---|---|
-| D1 | `DiscoveryQuery(period="all", min_views=0, max_creator_followers=0)` | Non-empty; every item `real_provider_data`; no restricted metric; ordered by views descending |
+| D1 | `DiscoveryQuery(period="all", min_views=0, max_creator_followers=2_147_483_647)` (see 3.1: **never 0**) | Non-empty; every item `real_provider_data`; no restricted metric; ordered by views descending |
 | D2 | Same with `sort="published_at"` | Ordered newest first; `published_at` aware and not in the future |
 | D3 | `min_views` above the largest sample view count | Empty page with the foundation's hint in `notes`; not an error |
 | D4 | `max_creator_followers` below the channel's subscribers | Items from that channel excluded; funnel/hint present |
@@ -36,11 +36,29 @@ shown to return real items. This plan makes that observable.
 | D10 | Provenance of all items | `collected_at` None; `foundation_first_seen_at` aware UTC inside the collection window; raw and derived separated |
 | D11 | Quota check | `/api/health` units and search calls identical before and after D1 to D10 (discovery spends nothing) |
 
+### 3.1 Correction (D1 audit, 2026-11-05): what "no subscriber limit" means
+
+The first version of this plan used `max_creator_followers=0` for D1. **That was wrong.** Verified against the pinned
+upstream (`application/discovery.py:311`, exercised offline by `tests/test_discovery_d1_upstream.py`):
+
+| Value sent as `max_subscribers` | Upstream behaviour |
+|---|---|
+| omitted | Default **10,000** is applied (route `api.py:661`) |
+| `0` | Filter is **active**: keeps only channels with 0 or hidden subscribers |
+| negative | Filter active: keeps only hidden-subscriber channels |
+| empty string, `null`, `None` | HTTP 422 (not an integer) |
+| `2147483647` or `1000000000000` | Passes every channel in the test corpus (including hidden ones) |
+
+There is no literal "unbounded" over HTTP. A very large integer behaves as unbounded for any real channel, but that is
+an inference about YouTube data, not a guarantee. `min_views=0` does disable the views filter (the check is
+`if min_views:`). The current adapter cannot yet send an explicit subscriber bound when the caller leaves it unset
+(audit F-1), so this live case must wait for the D3 adapter fix or use the raw HTTP route.
+
 ## 4. Offline groundwork (no quota, can run now)
 
 The fixtures in `tests/fixtures/niche_finder/` already cover D3, D6, D7, D9 and D10 with synthetic data. The approved
 run would add D1, D2, D4 and D5 on real data. Before it, add a recorded-transport test for D9 on `/api/viral` with
-`max_creator_followers=0`.
+an explicit large subscriber bound (not 0; see 3.1). D1 delivered it in `tests/test_discovery_d1_upstream.py`.
 
 ## 5. Acceptance
 

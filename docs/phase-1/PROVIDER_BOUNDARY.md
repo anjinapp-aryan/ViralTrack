@@ -17,7 +17,7 @@ class PlatformProvider(ABC):
     def get_trending_content(self, region=None) -> ContentPage
     # ingestion (Phase 2): internal-only, may spend platform quota
     def collect_creator(self, creator_ref, max_items=None) -> IngestionResult
-    def collect_query(self, text, pages=1, region=None, language=None) -> IngestionResult
+    def collect_query(self, text, pages=1, region=None, language=None, period=None) -> IngestionResult
     def refresh_stats(self, period="7d", limit=None) -> IngestionResult
     def ingestion_status(self) -> QuotaStatus
 ```
@@ -66,7 +66,11 @@ daily pool (10,000 units, 100 `search.list` calls). Each call goes through these
 2. **Argument limits.**
    - Pages ≤ `VT_YOUTUBE_MAX_SEARCH_PAGES` (1).
    - Videos ≤ `VT_YOUTUBE_MAX_VIDEOS_PER_COLLECT` (200).
-   - `period` format; region (ISO alpha-2) and language codes.
+   - `period` format; region (ISO alpha-2) and language codes. For `collect_query`, `period` is optional
+     (`None` by default) and must be `all` or a lowercase whole number of hours or days from 1 to 9999
+     (`24h`, `7d`); `all` and `None` send no period (no publication limit); empty, zero, uppercase, aliases
+     (`week`) and other units (`w`, `m`) are rejected, never normalised. See
+     [../phase-3/D2_IMPLEMENTATION_REPORT.md](../phase-3/D2_IMPLEMENTATION_REPORT.md).
    - References of at most 200 characters.
 
    A violation raises `ValueError` before any request.
