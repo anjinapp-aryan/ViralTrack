@@ -3,15 +3,15 @@
 Date: 2026-11-04. Each batch needs the owner's approval before work starts, and its commit needs separate
 approval.
 
-**Status (2026-11-04):**
+**Status (2026-11-05):** see [PHASE_2_COMMIT_MAP.md](PHASE_2_COMMIT_MAP.md) and [PHASE_2_RELEASE_READINESS.md](PHASE_2_RELEASE_READINESS.md).
 
 | Batch | Status |
 |---|---|
 | 1 | **Done**: committed by the owner as `9825f2d`; GitHub CI green (70 passed, 1 skipped) |
 | 2 | **Done**: committed by the owner together with the database work as `76f9335`; GitHub CI green (181 passed, 2 skipped) |
-| 3 | Approved 2026-11-04; implemented in the working tree (docs/phase-2/INGESTION_PROFILE.md); at its acceptance gate; not committed |
+| 3 | **Done**: committed as `c612136` (profile made the default by `52e28e6`); docs/phase-2/INGESTION_PROFILE.md |
 | 4 | **Deferred**: no FastAPI, uvicorn or new API service in this phase |
-| 5 | Not started |
+| 5 | **Done with limitations (PASS_WITH_LIMITATIONS)**: docs/phase-2/PHASE_2_BATCH_5_REAL_DATA_VALIDATION.md; follow-ups in `3836c34`, `1cc2c22`, `5ed12ec` |
 
 Thumbnails: `WORKER_THUMBS=0` for ViralTrack deployments (approved).
 
