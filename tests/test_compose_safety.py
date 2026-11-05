@@ -141,3 +141,12 @@ def test_the_local_stack_is_otherwise_unchanged(tmp_path):
     assert set(services) >= {"postgres", "web", "worker", "retention"}
     assert services["retention"]["depends_on"]["web"]["condition"] == "service_healthy"
     assert "retention" not in services["web"].get("depends_on", {})
+
+
+def test_retention_service_runs_the_loop_and_passes_the_interval(tmp_path):
+    svc = render(tmp_path, ["VT_RETENTION_INTERVAL_SECONDS=21600"])["retention"]
+    assert svc["command"] == ["python", "-m", "viraltrack.retention", "--apply", "--loop"]
+    assert svc["environment"]["VT_RETENTION_INTERVAL_SECONDS"] == "21600"
+    assert svc["restart"] == "unless-stopped"
+    blank = render(tmp_path)["retention"]["environment"]["VT_RETENTION_INTERVAL_SECONDS"]
+    assert blank == ""   # blank means the 3600 default

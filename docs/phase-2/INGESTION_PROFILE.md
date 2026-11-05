@@ -117,7 +117,7 @@ Verified against the pinned upstream source (`d872014`) by `tests/test_retention
 
 `test_transcripts_are_deleted_every_run_whatever_their_age`: a transcript created today is deleted by the next run
 and the report counts it. Nothing collects transcripts; upstream accepts manual pastes, which survive at most until
-the next daily run.
+the next retention run.
 
 ## 5. Failures are visible
 
@@ -127,7 +127,7 @@ the next daily run.
 | Database unreachable | Exit 4, masked URL, after 3 attempts | `test_retention_cli_unreachable_database_exits_4` |
 | Missing or invalid configuration | Exit 2 | `test_retention_cli_missing_url_exits_2` |
 | Error part-way through a run | The whole transaction rolls back; nothing is half-deleted; the exception propagates (non-zero exit) | `test_a_failing_run_deletes_nothing_and_raises` |
-| In the deployed service | A failed run is retried after 10 minutes, a successful one runs again after 24 hours, the container restarts unless stopped, and it starts only when `web` is healthy. Output is in `docker compose logs retention` | `test_the_deployed_retention_service_retries_failures_and_depends_on_web` |
+| In the deployed service | A failed run is retried after 10 minutes, a successful one runs again after `VT_RETENTION_INTERVAL_SECONDS` (default 3600), the container restarts unless stopped, and it starts only when `web` is healthy. Output is in `docker compose logs retention` | `test_the_deployed_retention_service_retries_failures_and_depends_on_web`, `tests/test_retention_interval.py` |
 
 Report mode (the default without `--apply`) rolls back and deletes nothing (`test_report_mode_deletes_nothing_even_for_expired_rows`).
 

@@ -29,6 +29,7 @@ services:
       VT_ENV: "${VT_ENV:-}"
       VT_LOG_LEVEL: "${VT_LOG_LEVEL:-}"
       VT_RETENTION_APPLY: "${VT_RETENTION_APPLY:-}"
+      VT_RETENTION_INTERVAL_SECONDS: "${VT_RETENTION_INTERVAL_SECONDS:-}"
       VT_RETENTION_YOUTUBE_STATS_DAYS: "${VT_RETENTION_YOUTUBE_STATS_DAYS:-}"
       VT_RETENTION_YOUTUBE_TEXT_DAYS: "${VT_RETENTION_YOUTUBE_TEXT_DAYS:-}"
       VT_YOUTUBE_ANALYTICS_AMENDMENT_ACCEPTED: "${VT_YOUTUBE_ANALYTICS_AMENDMENT_ACCEPTED:-}"
@@ -46,9 +47,9 @@ services:
       # Earlier spellings, blanked so a stale .env value cannot conflict with the above.
       VT_DATABASE_URL: ""
       VT_DATABASE_SCHEMA: ""
-    # Daily: delete what the policy no longer allows to keep. Runs once at start;
-    # a failed run is retried after 10 minutes instead of waiting a day.
-    command: ["sh", "-c", "while true; do if python -m viraltrack.retention --apply; then sleep 86400; else sleep 600; fi; done"]
+    # Delete what the policy no longer allows to keep. Runs once at start, then every
+    # VT_RETENTION_INTERVAL_SECONDS (default 3600); a failed run is retried after 10 minutes.
+    command: ["python", "-m", "viraltrack.retention", "--apply", "--loop"]
     restart: unless-stopped
     depends_on:
       # `web` creates and migrates the schema at start; retention must not run before it.

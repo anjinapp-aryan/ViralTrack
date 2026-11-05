@@ -102,6 +102,8 @@ class RetentionSettings:
     # False until the owner approves archiving thumbnail images: every retention run
     # then deletes the foundation's thumbnail_archive (Phase 2 Batch 3).
     thumbnails_approved: bool
+    # Seconds between runs of the retention loop (python -m viraltrack.retention --loop).
+    interval_seconds: int
 
 
 # --- database -------------------------------------------------------------
@@ -297,6 +299,7 @@ class Settings:
             "retention.apply": self.retention.apply,
             "retention.transcripts_approved": self.retention.transcripts_approved,
             "retention.thumbnails_approved": self.retention.thumbnails_approved,
+            "retention.interval_seconds": self.retention.interval_seconds,
         }
 
 
@@ -344,6 +347,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
             apply=_bool(env, "VT_RETENTION_APPLY", False),
             transcripts_approved=_bool(env, "VT_TRANSCRIPTS_APPROVED", False),
             thumbnails_approved=_bool(env, "VT_THUMBNAILS_APPROVED", False),
+            interval_seconds=_int(env, "VT_RETENTION_INTERVAL_SECONDS", 3600, 60, 86400),
         ),
     )
 

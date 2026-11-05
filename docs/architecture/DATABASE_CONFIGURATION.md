@@ -121,7 +121,7 @@ The classification is reported by the check command and has no effect on busines
 
 | Client | Connections |
 |---|---|
-| Retention job | **1**, for a few seconds a day (no pool: a daily single-transaction job gains nothing from one) |
+| Retention job | **1**, for a few seconds per run, once per `VT_RETENTION_INTERVAL_SECONDS` (default hourly; no pool: a single-transaction job gains nothing from one) |
 | `ConnectionPool` | For any future long-running ViralTrack process. **No current ViralTrack component uses it** (the internal API, Batch 4, is deferred) |
 | Foundation | Up to 20 per process (`ThreadedConnectionPool(1, 20)`), for `web`, `worker`, `mcp`, `mcp-http`, plus one per held advisory lock |
 

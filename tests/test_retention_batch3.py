@@ -335,8 +335,7 @@ def test_a_failing_run_deletes_nothing_and_raises(pg_schema, monkeypatch):
 
 def test_the_deployed_retention_service_retries_failures_and_depends_on_web():
     compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
-    assert "python -m viraltrack.retention --apply" in compose
-    assert "else sleep 600" in compose and "then sleep 86400" in compose   # failed run: retry in 10 min
+    assert '"viraltrack.retention", "--apply", "--loop"' in compose        # schedule + retry live in code
     assert "restart: unless-stopped" in compose
     assert "condition: service_healthy" in compose
 

@@ -46,7 +46,14 @@ payloads forever.
 | Statistics (views, likes, comments, subscribers, ranks) | 30 days | up to 1095 days | `VT_RETENTION_YOUTUBE_STATS_DAYS` (rejected above the cap) |
 | Text and media (titles, descriptions, names, thumbnails, LLM output) | 30 days | 30 days | `VT_RETENTION_YOUTUBE_TEXT_DAYS` (max 30) |
 
-The job runs daily as the compose `retention` service (`--apply`). Without `--apply` it reports in a
+The job runs as the compose `retention` service (`--apply --loop`), every `VT_RETENTION_INTERVAL_SECONDS`
+(default 3600; 60 to 86400). The 30-day cutoff and the strict older-than comparison are unchanged; the interval only decides
+how soon after a row passes the cutoff it is deleted: at most about one interval plus the run time (about 1 hour by default,
+31 days in total at the old daily schedule). It is not a hard 30-day maximum: while the container is stopped, the database is
+unreachable or a run keeps failing, nothing is deleted. A failed run retries after 10 minutes (or the interval, if shorter).
+Neon trade-off: each run opens a connection, so hourly runs keep a scale-to-zero compute from suspending; set
+`VT_RETENTION_INTERVAL_SECONDS=21600` (6 hours) to let it sleep, accepting up to about 6 extra hours of retention.
+Backup retention is a separate open question and is unchanged by this setting. Without `--apply` it reports in a
 rolled-back transaction, so a report shows exactly what an apply would delete. It **fails closed**: if the
 foundation's tables are missing (wrong schema, foundation not started), it exits with an error instead of
 reporting "nothing to delete". Timestamps that are not ISO-shaped are left alone and counted as `unknownAge`.
@@ -137,7 +144,7 @@ API data.
    pastes until the next run (OWNER_DECISIONS.md, D).
 3. Identifiers: policy text on storing bare video/channel ids was not located. ViralTrack keeps ids only where
    the user keeps them (watchlist, saved items, draft links).
-4. Deployments must run the `retention` service (or `python -m viraltrack.retention --apply` daily).
+4. Deployments must run the `retention` service (or `python -m viraltrack.retention --apply` at least hourly).
    Running the foundation's compose file alone re-creates the unsafe behaviour; use the root docker-compose.yml.
 5. **Thumbnails** (Phase 2 Batch 3, owner decision 2026-11-04): the foundation's `thumbnail_archive` and the image
    vectors computed from downloaded thumbnails are deleted on every run until `VT_THUMBNAILS_APPROVED=true`; the
