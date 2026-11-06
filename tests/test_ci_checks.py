@@ -279,15 +279,34 @@ def run_step(tmp_path, prefix, fake_sudo_body=None, replacements=None, env_extra
 
 @needs_bash
 def test_the_isolation_step_fails_when_the_check_fails_and_passes_when_it_passes(tmp_path):
-    failing = "case \"$*\" in *isolation*) echo 'ERROR: external connection succeeded'; exit 1;; esac; exit 0"
-    passing = "case \"$*\" in *isolation*) echo 'ISOLATION OK'; exit 0;; esac; exit 0"
+    # The stub validates the real step: `sudo -u vtoffline <command>`; anything else is rejected.
+    check = "ci_checks.py isolation localhost 5432 1002 1002"
+    bad_body = "".join(
+        [
+            'if [ "$1" != "-u" ] || [ "$2" != "vtoffline" ]; then ',
+            'echo "unexpected sudo arguments: $*" >&2; exit 97; fi' + "; ",
+            "shift 2; ",
+            'case "$*" in ',
+            'id) echo "uid=1002(vtoffline)"; exit 0;; ',
+            f'*"{check}") echo "ERROR: external connection succeeded"; exit 1;; ',
+            '*) echo "unexpected command: $*" >&2; exit 98;; ',
+            "esac",
+        ]
+    )
+    good_body = bad_body.replace(
+        'echo "ERROR: external connection succeeded"; exit 1', 'echo "ISOLATION OK"; exit 0'
+    )
     assert "tests/support/ci_checks.py isolation" in step("Verify the isolation")
     (tmp_path / "bad").mkdir()
     (tmp_path / "good").mkdir()
-    bad = run_step(tmp_path / "bad", "Verify the isolation", failing)
-    good = run_step(tmp_path / "good", "Verify the isolation", passing)
+    bad = run_step(tmp_path / "bad", "Verify the isolation", bad_body)
+    good = run_step(tmp_path / "good", "Verify the isolation", good_body)
+    # fail for the INTENDED reason: the check's own message reached the log, not a stub or sudo problem
     assert bad.returncode != 0, bad.stdout + bad.stderr
+    assert "ERROR: external connection succeeded" in bad.stdout, bad.stdout + bad.stderr
+    assert "unexpected" not in bad.stderr and "not found" not in bad.stderr, bad.stderr
     assert good.returncode == 0, good.stdout + good.stderr
+    assert "ISOLATION OK" in good.stdout, good.stdout
 
 
 def gate_step(tmp_path, report_text=None, python_stub=None):
