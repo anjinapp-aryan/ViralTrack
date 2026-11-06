@@ -174,7 +174,7 @@ for n in niches:
         "SELECT count(*) AS c FROM video_niches WHERE niche_slug = ?", (n["slug"],)
     ).fetchone()["c"]
 conn.close()
-print(
-    "RESULT:" + json.dumps({"results": results, "niches": niches, "network_attempts": len(ATTEMPTS)}),
-    flush=True,
-)
+identity = {k: getattr(os, k)() if hasattr(os, k) else None for k in ("geteuid", "getegid")}
+payload_out = {"results": results, "niches": niches, "network_attempts": len(ATTEMPTS),
+               "uid": identity["geteuid"], "gid": identity["getegid"]}
+print("RESULT:" + json.dumps(payload_out), flush=True)

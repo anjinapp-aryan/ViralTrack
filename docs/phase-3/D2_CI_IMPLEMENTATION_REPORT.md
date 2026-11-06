@@ -5,6 +5,17 @@ untracked, so it cannot run until the owner commits and pushes, which this assig
 checked on a Windows machine; nothing about the hosted runner, the firewall rule or the reduced dependency set has been
 demonstrated yet. Design basis: [D1_CI_INTEGRATION_PROPOSAL.md](D1_CI_INTEGRATION_PROPOSAL.md). D2 code: [D2_IMPLEMENTATION_REPORT.md](D2_IMPLEMENTATION_REPORT.md).
 
+## Erratum (2026-11-06, after the independent audit and the first hosted run)
+
+- The first hosted run (GitHub Actions run 42081777090, commit `0cdaa44`) **passed**: 277 collected, 268 passed, 9 xfailed, 0 skipped.
+  The firewall rules were installed for uid 1002 (IPv4 and IPv6), the runner user kept internet access, the test user's external
+  connections were refused, and the database stayed reachable.
+- Two statements in this report were **wrong** and have been corrected by the hardening change
+  ([CI_HARDENING_REPORT.md](CI_HARDENING_REPORT.md)): (1) "any violation makes the step, and the job, fail" was false for the isolation
+  check and for a crashing report checker, because a command piped into `tee` returns `tee`'s status when `pipefail` is off; (2) the
+  process identity of pytest was inferred, not verified. Both are fixed and tested offline; the fix has not yet run on GitHub.
+- The firewall step took 234 s in that run; the cause is not known (see the hardening report).
+
 ## 1. What changed
 
 | File | Change |

@@ -51,4 +51,7 @@ for path in payload["paths"]:
     except ValueError:
         body = None
     responses.append({"status": resp.status_code, "body": body})
-print("RESULT:" + json.dumps({"responses": responses, "network_attempts": len(ATTEMPTS)}), flush=True)
+identity = {k: getattr(os, k)() if hasattr(os, k) else None for k in ("geteuid", "getegid")}
+out = {"responses": responses, "network_attempts": len(ATTEMPTS),
+       "uid": identity["geteuid"], "gid": identity["getegid"]}
+print("RESULT:" + json.dumps(out), flush=True)

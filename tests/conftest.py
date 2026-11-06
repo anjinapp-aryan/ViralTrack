@@ -49,3 +49,25 @@ def pg_schema():
             cur.execute(f"DROP SCHEMA {name} CASCADE")
         conn.commit()
         conn.close()
+
+
+# ---- process identity (CI: the discovery-offline job runs pytest as a restricted user) ----
+# When VT_TEST_EXPECT_UID (and optionally VT_TEST_EXPECT_GID) is set, the session refuses to start unless this
+# process really runs as that user, read from the operating system. The header shows the identity in the log.
+
+def pytest_report_header(config):
+    from tests.support.ci_checks import current_identity
+
+    ident = current_identity()
+    return "process identity: " + " ".join(f"{key}={value}" for key, value in ident.items())
+
+
+def pytest_sessionstart(session):
+    expected = os.environ.get("VT_TEST_EXPECT_UID")
+    if not expected:
+        return
+    from tests.support.ci_checks import identity_problems
+
+    problems = identity_problems(expected, os.environ.get("VT_TEST_EXPECT_GID"))
+    if problems:
+        pytest.exit("wrong process identity: " + "; ".join(problems), returncode=3)

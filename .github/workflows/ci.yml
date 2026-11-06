@@ -110,12 +110,17 @@ jobs:
   # Phase 3 D1/D2: the tests that run the REAL pinned foundation code offline (synthetic data, YouTube calls
   # faked, no key, no network). A separate job and a separate virtualenv because the foundation pins `anyio`
   # 4.15.1 and ViralTrack's lock pins 4.16.0. Independent of the `viraltrack` job. Design and evidence:
-  # docs/phase-3/D1_CI_INTEGRATION_PROPOSAL.md and docs/phase-3/D2_CI_IMPLEMENTATION_REPORT.md.
+  # docs/phase-3/D1_CI_INTEGRATION_PROPOSAL.md, docs/phase-3/D2_CI_IMPLEMENTATION_REPORT.md and
+  # docs/phase-3/CI_HARDENING_REPORT.md. Every multi-line step starts with `set -o pipefail`, so a failing command
+  # in front of `tee` cannot be hidden; tests/test_ci_checks.py enforces that.
   discovery-offline:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
+    defaults:
+      run:
+        shell: bash
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -153,6 +158,7 @@ jobs:
       # Everything is downloaded here, BEFORE the network is cut off.
       - name: Install (ViralTrack environment and a separate foundation environment)
         run: |
+          set -o pipefail
           start=$(date +%s)
           python -m venv /tmp/vt-venv
           /tmp/vt-venv/bin/pip install -r requirements-dev.lock
@@ -176,44 +182,73 @@ jobs:
           NICHE_DATABASE_URL: postgresql://vt:vt@localhost:5432/vt
           NICHE_DB_SCHEMA: vt_import_smoke
         run: |
+          set -o pipefail
           /tmp/upstream-venv/bin/python -c "import sys; sys.path.insert(0, 'upstream/youtube-niche-finder/backend'); import api; print('foundation api imported')"
 
       # The tests run as a separate, unprivileged user, and the firewall rejects that user's traffic to anything
       # except loopback and the private (docker) ranges the database service container lives in. The rule is
       # scoped by user ID on purpose: a rule for the whole host would also cut off the runner agent, which has to
-      # reach GitHub to report the job. No fallback if any of this fails.
+      # reach GitHub to report the job. No fallback if any of this fails. Each command is timed (`t`), so the
+      # slow one is visible in the log.
       - name: Cut off the network for the test user
         run: |
-          command -v iptables || { echo "iptables is not available on this runner: network isolation cannot be installed"; exit 1; }
-          sudo useradd --create-home --shell /usr/sbin/nologin vtoffline
-          sudo chmod o+x /home/runner /home/runner/work
-          mkdir -p /tmp/vt-offline && chmod 777 /tmp/vt-offline
-          sudo iptables -A OUTPUT -m owner --uid-owner vtoffline -o lo -j ACCEPT
-          sudo iptables -A OUTPUT -m owner --uid-owner vtoffline -d 172.16.0.0/12 -j ACCEPT
-          sudo iptables -A OUTPUT -m owner --uid-owner vtoffline -j REJECT
+          set -o pipefail
+          # t: run a command; print when it started, how long it took and its exit status; keep its status
+          t() {
+            local begin end rc=0
+            begin=$(date +%s.%N)
+            "$@" || rc=$?
+            end=$(date +%s.%N)
+            printf '[%s UTC] %7.2fs rc=%s  %s\n' "$(date -u -d "@${begin%.*}" +%H:%M:%S)" \
+              "$(awk -v b="$begin" -v e="$end" 'BEGIN { printf "%.2f", e - b }')" "$rc" "$*"
+            return $rc
+          }
+          total_start=$(date +%s)
+          t command -v iptables || { echo "iptables is not available on this runner: network isolation cannot be installed"; exit 1; }
+          t command -v ip6tables || { echo "ip6tables is not available on this runner: network isolation cannot be installed"; exit 1; }
+          t sudo useradd --create-home --shell /usr/sbin/nologin vtoffline
+          t sudo chmod o+x /home/runner /home/runner/work
+          t mkdir -p /tmp/vt-offline
+          t chmod 777 /tmp/vt-offline
+          VT_UID=$(id -u vtoffline)
+          VT_GID=$(id -g vtoffline)
+          echo "VT_UID=$VT_UID" >> "$GITHUB_ENV"
+          echo "VT_GID=$VT_GID" >> "$GITHUB_ENV"
+          echo "restricted user: uid=$VT_UID gid=$VT_GID; runner user: uid=$(id -u) gid=$(id -g)"
+          test "$VT_UID" != "$(id -u)" || { echo "the restricted user has the runner's uid"; exit 1; }
+          t sudo iptables -A OUTPUT -m owner --uid-owner "$VT_UID" -o lo -j ACCEPT
+          t sudo iptables -A OUTPUT -m owner --uid-owner "$VT_UID" -d 172.16.0.0/12 -j ACCEPT
+          t sudo iptables -A OUTPUT -m owner --uid-owner "$VT_UID" -j REJECT
           # the same for IPv6, so an IPv6 route cannot bypass the rule
-          command -v ip6tables || { echo "ip6tables is not available on this runner"; exit 1; }
-          sudo ip6tables -A OUTPUT -m owner --uid-owner vtoffline -o lo -j ACCEPT
-          sudo ip6tables -A OUTPUT -m owner --uid-owner vtoffline -j REJECT
-          echo "--- OUTPUT chain ---"
-          sudo iptables -S OUTPUT
-          sudo ip6tables -S OUTPUT
+          t sudo ip6tables -A OUTPUT -m owner --uid-owner "$VT_UID" -o lo -j ACCEPT
+          t sudo ip6tables -A OUTPUT -m owner --uid-owner "$VT_UID" -j REJECT
+          echo "--- OUTPUT chains ---"
+          sudo iptables -S OUTPUT | tee rules4.txt
+          sudo ip6tables -S OUTPUT | tee rules6.txt
+          grep -q -- "--uid-owner $VT_UID" rules4.txt || { echo "the IPv4 rules do not match uid $VT_UID"; exit 1; }
+          grep -q -- "--uid-owner $VT_UID" rules6.txt || { echo "the IPv6 rules do not match uid $VT_UID"; exit 1; }
+          echo "firewall step total: $(( $(date +%s) - total_start ))s"
 
       - name: Verify the isolation (external traffic fails, the database still works)
         run: |
+          set -o pipefail
           echo "runner user, for contrast (informational, not enforced):"
           echo "github.com, runner user: HTTP $(curl -sS -m 10 -o /dev/null -w '%{http_code}' https://github.com || echo unreachable)"
-          sudo -u vtoffline /tmp/vt-venv/bin/python tests/support/ci_checks.py isolation localhost 5432 | tee isolation.txt
+          sudo -u vtoffline id
+          sudo -u vtoffline /tmp/vt-venv/bin/python tests/support/ci_checks.py isolation localhost 5432 "$VT_UID" "$VT_GID" | tee isolation.txt
           { echo "### Network isolation (test user)"; echo '```'; cat isolation.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Offline discovery tests (real foundation code, synthetic data), as the isolated user
         run: |
+          set -o pipefail
           start=$(date +%s)
+          sudo -u vtoffline id
           set +e
           sudo -u vtoffline env \
             "VT_TEST_DATABASE_URL=$VT_TEST_DATABASE_URL" "VT_TEST_REQUIRE_PGVECTOR=$VT_TEST_REQUIRE_PGVECTOR" \
             "VT_TEST_REQUIRE_UPSTREAM=$VT_TEST_REQUIRE_UPSTREAM" "VT_TEST_UPSTREAM_PYTHON=$VT_TEST_UPSTREAM_PYTHON" \
             "HF_HUB_OFFLINE=$HF_HUB_OFFLINE" "PYTHONDONTWRITEBYTECODE=1" \
+            "VT_TEST_EXPECT_UID=$VT_UID" "VT_TEST_EXPECT_GID=$VT_GID" \
             /tmp/vt-venv/bin/pytest -p no:cacheprovider -rfEX --junitxml=/tmp/vt-offline/report.xml \
             tests/test_discovery_d1_adapter.py tests/test_discovery_d1_upstream.py \
             tests/test_discovery_d1_policy.py tests/test_collect_period.py tests/test_collect_period_upstream.py
@@ -222,10 +257,49 @@ jobs:
           echo "test_seconds=$((end - start))" | tee -a "$GITHUB_STEP_SUMMARY"
           exit $status
 
-      - name: Enforce collection and skip rules
+      # Informational only (never fails the job): which rules carried the traffic, how DNS behaves for the test
+      # user, where the database container lives, and what the database role may do. It documents the limits
+      # of the isolation; it changes nothing.
+      - name: Network diagnostics (informational)
+        if: always()
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          {
+            echo "--- rule counters after the tests (packets and bytes per rule) ---"
+            sudo iptables -L OUTPUT -v -n -x || true
+            sudo ip6tables -L OUTPUT -v -n -x || true
+            echo "--- resolver configuration ---"
+            cat /etc/resolv.conf || true
+            echo "--- name resolution as the restricted user ---"
+            sudo -u vtoffline getent hosts pypi.org || echo "no resolution"
+            echo "--- docker networks and the database container ---"
+            docker network ls || true
+            docker ps --format '{{.ID}} {{.Image}} {{.Ports}}' || true
+            for c in $(docker ps -q --filter ancestor=pgvector/pgvector:pg16); do
+              docker inspect -f '{{.Name}} {{range $k, $v := .NetworkSettings.Networks}}{{$k}}={{$v.IPAddress}} {{end}}' "$c" || true
+            done
+            echo "--- listeners on 5432 ---"
+            sudo ss -ltnp 2>/dev/null | grep -E ':5432 ' || true
+            echo "--- the database role used by the tests ---"
+            /tmp/vt-venv/bin/python -c "import os, psycopg2; cur = psycopg2.connect(os.environ['VT_TEST_DATABASE_URL']).cursor(); cur.execute('select rolname, rolsuper, rolcreaterole, rolcreatedb from pg_roles where rolname = current_user'); print(cur.fetchall())" || true
+            true
+          } 2>&1 | tee diagnostics.txt
+          { echo "### Network diagnostics (informational)"; echo '```'; cat diagnostics.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      # The gate fails on a missing, empty, truncated or malformed report, on a missing summary, on any skip,
+      # failure or error, on a wrong file count, and unless exactly the nine known strict xfails are xfailed.
+      - name: Enforce collection, skip and xfail rules
         if: always()
         run: |
-          test -f /tmp/vt-offline/report.xml || { echo "no test report was produced"; exit 1; }
-          /tmp/vt-venv/bin/python tests/support/ci_checks.py report /tmp/vt-offline/report.xml | tee summary.md
-          cat summary.md >> "$GITHUB_STEP_SUMMARY"
-          ! grep -q "PROBLEM" summary.md
+          set -o pipefail
+          status=0
+          /tmp/vt-venv/bin/python tests/support/ci_checks.py gate /tmp/vt-offline/report.xml summary.md || status=$?
+          if [ -s summary.md ]; then
+            tee -a "$GITHUB_STEP_SUMMARY" < summary.md
+          else
+            echo "no report summary was produced"
+            status=1
+          fi
+          /tmp/vt-venv/bin/python tests/support/ci_checks.py require-summary summary.md || status=$?
+          exit $status

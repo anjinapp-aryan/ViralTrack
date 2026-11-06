@@ -51,6 +51,12 @@ def _run(runner: Path, schema: str, payload: dict) -> dict:
         raise AssertionError(f"upstream runner failed ({done.returncode}): {done.stderr[-800:]}")
     result = json.loads(line[len("RESULT:") :])
     assert result["network_attempts"] == 0, "an offline test tried to reach the network"
+    expected = os.environ.get("VT_TEST_EXPECT_UID")
+    if expected:  # CI: the child process must keep the restricted identity
+        from tests.support.ci_checks import child_identity_problems
+
+        problems = child_identity_problems(result, expected, os.environ.get("VT_TEST_EXPECT_GID"))
+        assert not problems, "; ".join(problems)
     return result
 
 
