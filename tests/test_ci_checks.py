@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import socket
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -249,7 +250,41 @@ def posix(path) -> str:
 def stub(tmp_path, name, body):
     path = tmp_path / name
     path.write_text("#!/bin/bash\n" + body + "\n", encoding="utf-8", newline="\n")
+    path.chmod(0o755)  # without the executable bit bash skips the file and runs the REAL command on PATH
     return path
+
+
+def assert_stubs_executable(bindir):
+    """Every stub must be executable, or a Linux shell silently falls through to the real command."""
+    for path in sorted(bindir.iterdir()):
+        assert os.access(path, os.X_OK), f"stub {path.name} is not executable"
+        if os.name == "posix":  # Windows does not keep POSIX permission bits, so the bit is checked here only
+            assert path.stat().st_mode & stat.S_IXUSR, f"stub {path.name} lacks the executable bit"
+
+
+def test_every_stub_is_made_executable(tmp_path, monkeypatch):
+    # Windows cannot report POSIX bits, so the request itself is recorded: it must be 0o755 for every stub.
+    requested = []
+    real_chmod = Path.chmod
+
+    def recording_chmod(self, mode, **kw):
+        requested.append((self.name, mode))
+        real_chmod(self, mode)
+
+    monkeypatch.setattr(Path, "chmod", recording_chmod)
+    for name in ("sudo", "curl", "anything"):
+        stub(tmp_path, name, "exit 0")
+    assert requested == [("sudo", 0o755), ("curl", 0o755), ("anything", 0o755)]
+    assert_stubs_executable(tmp_path)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="needs POSIX permission bits")
+def test_the_guard_rejects_a_non_executable_stub(tmp_path):
+    path = tmp_path / "sudo"
+    path.write_text("#!/bin/bash\nexit 0\n", encoding="utf-8")
+    path.chmod(0o644)
+    with pytest.raises(AssertionError, match="not executable|lacks the executable bit"):
+        assert_stubs_executable(tmp_path)
 
 
 def run_step(tmp_path, prefix, fake_sudo_body=None, replacements=None, env_extra=None):
@@ -262,6 +297,7 @@ def run_step(tmp_path, prefix, fake_sudo_body=None, replacements=None, env_extra
     if fake_sudo_body is not None:
         stub(bindir, "sudo", fake_sudo_body)
     stub(bindir, "curl", "echo 200")
+    assert_stubs_executable(bindir)
     script = tmp_path / "step.sh"
     script.write_text(body, encoding="utf-8", newline="\n")
     env = dict(
