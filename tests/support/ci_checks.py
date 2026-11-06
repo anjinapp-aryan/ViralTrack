@@ -9,8 +9,9 @@
 database service is still reachable and, when given, that this process runs as the expected restricted user.
 `gate` enforces what the job promises and ALWAYS writes a summary file: every expected test file was
 collected (at least its recorded number of tests), nothing was skipped (a skip would mean the upstream-backed
-tests did not run), nothing failed, exactly the nine known strict xfails are xfailed, and the report itself is
-present, well formed and non-empty. A missing, truncated or malformed report is a PROBLEM, never a pass.
+tests did not run), nothing failed, exactly the known strict xfails (EXPECTED_XFAILS) are xfailed, and
+the report itself is present, well formed and non-empty. A missing, truncated or malformed report is a
+PROBLEM, never a pass.
 `require-summary` fails when the summary file is missing, empty or lacks its header.
 
 Every command returns a non-zero exit status on any problem and reports it on stdout with the word PROBLEM
@@ -29,29 +30,17 @@ SUMMARY_HEADER = "### Offline discovery tests (real upstream code, synthetic dat
 EXPECTED_MINIMUM = {
     "tests/test_discovery_d1_adapter.py": 35,
     "tests/test_discovery_d1_upstream.py": 53,
-    "tests/test_discovery_d1_policy.py": 35,
+    "tests/test_discovery_d1_policy.py": 32,
     "tests/test_collect_period.py": 119,
     "tests/test_collect_period_upstream.py": 35,
 }
 
-# The nine strict xfail tests that document known defects (D1 closure report, section 3). The job requires
+# The strict xfail tests that document known defects (D1 closure report, section 3). The job requires
 # exactly these: a fixed defect turns its xfail into a failure (strict), and a deleted or renamed one is
-# caught here. When D3 fixes a defect, remove its entry in the same change as its xfail marker.
-_ADAPTER = "tests.test_discovery_d1_adapter::"
-_POLICY = "tests.test_discovery_d1_policy::"
-EXPECTED_XFAILS = frozenset(
-    [
-        _ADAPTER + "test_an_unset_subscriber_filter_must_not_fall_back_to_the_foundation_default",
-        _ADAPTER + "test_an_unset_minimum_views_filter_must_not_fall_back_to_the_foundation_default",
-        _ADAPTER + "test_the_batch_5_query_sends_every_threshold_explicitly",
-        _ADAPTER + "test_a_boolean_total_is_not_a_count",
-        _ADAPTER + "test_invalid_entries_are_not_silently_dropped",
-        _ADAPTER + "test_duplicate_video_ids_in_one_response_are_collapsed_or_flagged",
-        _ADAPTER + "test_the_foundations_funnel_reaches_the_caller",
-        _POLICY + "test_velocity_from_stale_snapshots_is_withheld_or_flagged",
-        _POLICY + "test_an_undated_video_has_no_lifetime_velocity",
-    ]
-)
+# caught here. When a defect is fixed, remove its entry in the same change as its xfail marker. D3 and the
+# F-1/F-2 fix resolved all nine original ones, so the set is empty: ANY xfail in these files is now a failure
+# until an owner-approved new known defect is listed here.
+EXPECTED_XFAILS: frozenset[str] = frozenset()
 
 # Literal addresses (IPv4 and IPv6): no DNS needed.
 EXTERNAL_TARGETS = [

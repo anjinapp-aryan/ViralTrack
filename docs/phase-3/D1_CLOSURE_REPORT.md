@@ -121,7 +121,7 @@ There is **no unbounded value**, and none is documented upstream (`docs/http-api
 named constant with a documented rationale and a test that pins it, *and* report in the response metadata that the
 subscriber filter was "bounded at N", never "off". Prefer a bound grounded in data over a round number: the Batch 5
 approach of recording the largest subscriber count seen in the collected channels is not exposed by the API (UNKNOWN), so
-the bound stays a constant. Do not use `2147483647` and call it unlimited. If the owner wants a true no-limit list, the
+the bound stays a constant. **Owner decision (recorded in D3): the bound is 1,000,000 subscribers**, a bounded discovery limit, never described as unlimited. Do not use `2147483647` and call it unlimited. If the owner wants a true no-limit list, the
 only exact route is **B** (no subscriber filter at all), accepting no views filter, no funnel and an unvalidated order;
 **C** can add the views filter locally for lists small enough to fit one page.
 
@@ -171,4 +171,4 @@ discovery, transcripts, thumbnails, LLM, Instagram or TikTok. Technical feasibil
 1. Which subscriber approach for discovery: bounded constant (E), no filter via search (B), or local filter (C); and the value of the bound if E.
 2. Whether text-search results may be ordered by the internal semantic score (audit F-5), or text search must be refused until an allowed order exists.
 3. Whether the 24-hour velocity metrics may be shown while their snapshot recency is unknown (defect 5).
-4. Whether the Shorts duration filter may stay in the discovery request (audit F-6).
+4. Whether the Shorts duration filter may stay in the discovery request (audit F-6). **Resolved 2026-11-06:** it stays, as a duration filter on raw metadata applied by ViralTrack ([F6_SHORT_FORM_INVESTIGATION.md](F6_SHORT_FORM_INVESTIGATION.md)).

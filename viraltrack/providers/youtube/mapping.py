@@ -9,6 +9,7 @@ listed below are ignored (allow-list).
 """
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -19,6 +20,7 @@ from viraltrack.domain import (
     Creator,
     DataOrigin,
     Exposure,
+    FunnelStage,
     Metric,
     MetricKind,
     MetricPolicy,
@@ -54,7 +56,19 @@ DERIVED_VIDEO_METRICS = {
 
 # Derived values that are only meaningful when a raw input is present. niche-finder
 # counts a hidden like count as 0 in engagementRate, which understates it.
-REQUIRES_RAW = {"engagement_rate": ("likes",)}
+REQUIRES_RAW = {"engagement_rate": ("likes",), "views_per_hour_lifetime": ("views",)}
+
+# D3-05: the foundation computes these over "the latest snapshot at least 24 h older, else the oldest one",
+# and reports no snapshot time. How recent the window is, and how long, is therefore unknown; a rate over
+# two hours
+# or over weeks would be shown as a current 24-hour rate. They are withheld until a snapshot time is reported.
+# Neither the response time nor the collection time stands in for it, and no lifetime value is substituted.
+WITHHELD_UNKNOWN_SNAPSHOT_RECENCY = frozenset({"views_per_hour_24h", "views_gained_24h"})
+
+# D3-06: a lifetime rate is "views / hours since publication"; without a usable publication date the
+# foundation computes it from an age of 0 h (floored to 1 h). It is shown only for a dated video that is not
+# in the future.
+NEEDS_PUBLICATION_DATE = frozenset({"views_per_hour_lifetime"})
 
 # Real YouTube ids. The niche-finder demo seed uses ids like "bvid008", so a demo
 # corpus served as "real" is rejected instead of being passed off as provider data.
@@ -86,13 +100,104 @@ def _num(value):
     return value
 
 
+def _bad(item: dict, key: str, expected: str):
+    kind = type(item.get(key)).__name__
+    raise ProviderError(PROVIDER_ID, f"video item field {key!r} must be {expected}, got {kind}")
+
+
+def _number(item: dict, key: str):
+    """A numeric field: absent or null is None (unknown); a boolean, string or non-finite number is bad."""
+    value = item.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        _bad(item, key, "a number")
+    if isinstance(value, float) and not math.isfinite(value):
+        _bad(item, key, "a finite number")
+    return value
+
+
+def _text(item: dict, key: str) -> str | None:
+    value = item.get(key)
+    if value is not None and not isinstance(value, str):
+        _bad(item, key, "text")
+    return value
+
+
+def count(value) -> int | None:
+    """A count or total: a non-negative integer. A boolean (an int in Python), a negative, a float, a string
+    or anything else is not a count and is None (unknown), never coerced."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return value
+
+
+# Funnel steps that name a RESTRICTED threshold. The adapter never sends those thresholds, so a step like this
+# means the response is not what was asked for; the funnel (and the hint built from it) is withheld.
+_RESTRICTED_STEP = re.compile(r"per subscriber|outlier|viral|acceleration", re.I)
+
+
+def mentions_restricted_metric(text: str) -> bool:
+    return bool(_RESTRICTED_STEP.search(text))
+
+
+def map_funnel(raw) -> tuple[tuple[FunnelStage, ...] | None, str | None]:
+    """The foundation's `funnel` -> (stages, note). (None, None): not reported. (None, note): reported but not
+    usable, and the note says so. An empty list is a reported, empty funnel, which is not the same as none."""
+    if raw is None:
+        return None, None
+    if not isinstance(raw, list):
+        return None, "the foundation's funnel is malformed and was not used"
+    stages = []
+    for entry in raw:
+        valid = (isinstance(entry, dict) and isinstance(entry.get("step"), str)
+                 and count(entry.get("remaining")) is not None)
+        if not valid:
+            return None, "the foundation's funnel has an invalid stage and was not used"
+        if mentions_restricted_metric(entry["step"]):
+            return None, "the foundation's funnel names a restricted metric and was withheld"
+        stages.append(FunnelStage(entry["step"], entry["remaining"]))
+    return tuple(stages), None
+
+
+# `short_form` is a DURATION test on raw video metadata, not YouTube's Shorts classification (owner
+# decision, F-6):
+# short = a known duration of more than 0 and at most 180 seconds, inclusive. Zero, missing, null and invalid
+# durations are NOT short. The foundation's own `is_short` flag never decides this.
+SHORT_FORM_MAX_SECONDS = 180
+
+
+def duration_seconds(value) -> int | float | None:
+    """A video duration: a finite, non-negative number. Missing, null, boolean, text or negative is None."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value if value >= 0 else None
+
+
+def is_short_form(duration) -> bool:
+    return duration is not None and 0 < duration <= SHORT_FORM_MAX_SECONDS
+
+
+def published_time(value) -> datetime | None:
+    """A publication time as aware UTC. Missing, malformed, not text, or without an offset is None (unknown):
+    the date is never assumed to be UTC, and never replaced by the collection or the current time."""
+    if not isinstance(value, str):
+        return None
+    parsed = parse_time(value)
+    if parsed is None or parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(timezone.utc)
+
+
 def _check_ids(ctx: MappingContext, video_id: str | None, channel_id: str) -> None:
     if ctx.origin is not DataOrigin.REAL_PROVIDER_DATA:
         return
-    if video_id is not None and not _VIDEO_ID.match(video_id):
+    if video_id is not None and not _VIDEO_ID.fullmatch(video_id):
         raise ProviderError(PROVIDER_ID, f"{video_id!r} is not a YouTube video id; "
                             "is the foundation serving demo data? (set VT_YOUTUBE_DATA_ORIGIN=demo)")
-    if not _CHANNEL_ID.match(channel_id):
+    if not _CHANNEL_ID.fullmatch(channel_id):
         raise ProviderError(PROVIDER_ID, f"{channel_id!r} is not a YouTube channel id")
 
 
@@ -113,14 +218,18 @@ def raw_provenance(ctx: MappingContext, collected_at: datetime | None,
                       exposure=Exposure.ALLOWED, foundation_first_seen_at=first_seen)
 
 
-def _derived(ctx: MappingContext, item: dict,
-             first_seen: datetime | None = None) -> tuple[Metric, ...]:
+def _derived(ctx: MappingContext, item: dict, first_seen: datetime | None = None,
+             published_at: datetime | None = None) -> tuple[Metric, ...]:
     out = []
     for key, name in DERIVED_VIDEO_METRICS.items():
-        value = _num(item.get(key))
+        value = _number(item, key)
         if value is None or not ctx.policy.exposable(name):
             continue
-        if any(_num(item.get(raw)) is None for raw in REQUIRES_RAW.get(name, ())):
+        if name in WITHHELD_UNKNOWN_SNAPSHOT_RECENCY:
+            continue
+        if name in NEEDS_PUBLICATION_DATE and (published_at is None or published_at > ctx.retrieved_at):
+            continue
+        if any(_number(item, raw) is None for raw in REQUIRES_RAW.get(name, ())):
             continue
         rule = ctx.policy.rules[name]
         prov = Provenance(provider=PROVIDER_ID, source=DERIVED_SOURCE, collected_at=None,
@@ -135,7 +244,7 @@ def _derived(ctx: MappingContext, item: dict,
 def _raw(item: dict, fields: dict, provenance: Provenance) -> tuple[Metric, ...]:
     out = []
     for key, name in fields.items():
-        value = _num(item.get(key))
+        value = _number(item, key)
         if value is not None:
             out.append(Metric(name=name, value=value, provenance=provenance))
     return tuple(out)
@@ -149,10 +258,14 @@ def channel_url(channel_id: str, handle: str | None) -> str:
 
 def map_video(item: dict, ctx: MappingContext) -> Content:
     """One element of `results` from /api/viral or /api/search."""
+    if not isinstance(item, dict):
+        raise ProviderError(PROVIDER_ID, f"video item must be an object, got {type(item).__name__}")
     video_id = item.get("videoId")
     channel_id = item.get("channelId")
     if not video_id or not channel_id:
         raise ProviderError(PROVIDER_ID, "video item without videoId/channelId")
+    if not isinstance(video_id, str) or not isinstance(channel_id, str):
+        raise ProviderError(PROVIDER_ID, "video item videoId/channelId must be text")
     _check_ids(ctx, video_id, channel_id)
 
     # niche-finder does not report per-item fetch times on these endpoints, so the time the
@@ -161,13 +274,14 @@ def map_video(item: dict, ctx: MappingContext) -> Content:
     # ViralTrack's own receive time is `Content.retrieved_at`.
     first_seen = foundation_first_seen_time(item.get("firstSeenAt"))
     raw = raw_provenance(ctx, None, first_seen)
-    handle = item.get("channelUrl")
-    followers = _num(item.get("channelSubscribers"))
-    uploads = _num(item.get("channelVideoCount"))
+    handle = _text(item, "channelUrl")
+    followers = _number(item, "channelSubscribers")
+    uploads = _number(item, "channelVideoCount")
+    published_at = published_time(item.get("publishedAt"))
     creator = Creator(
         platform=Platform.YOUTUBE,
         creator_id=channel_id,
-        name=item.get("channelTitle"),
+        name=_text(item, "channelTitle"),
         handle=handle,
         url=channel_url(channel_id, handle),
         followers=Metric("followers", followers, raw) if followers is not None else None,
@@ -181,17 +295,17 @@ def map_video(item: dict, ctx: MappingContext) -> Content:
         platform=Platform.YOUTUBE,
         content_id=video_id,
         content_type=content_type,
-        url=item.get("url") or f"https://www.youtube.com/watch?v={video_id}",
+        url=_text(item, "url") or f"https://www.youtube.com/watch?v={video_id}",
         creator=creator,
         origin=ctx.origin,
-        title=item.get("title"),
-        thumbnail_url=item.get("thumbnail"),
-        published_at=parse_time(item.get("publishedAt")),
-        duration_seconds=_num(item.get("lengthSeconds")),
-        language=item.get("language"),
-        category=item.get("category"),
+        title=_text(item, "title"),
+        thumbnail_url=_text(item, "thumbnail"),
+        published_at=published_at,
+        duration_seconds=duration_seconds(item.get("lengthSeconds")),
+        language=_text(item, "language"),
+        category=_text(item, "category"),
         metrics=_raw(item, RAW_VIDEO_METRICS, raw),
-        derived=_derived(ctx, item, first_seen),
+        derived=_derived(ctx, item, first_seen, published_at),
         retrieved_at=ctx.retrieved_at,
         provider=PROVIDER_ID,
     )

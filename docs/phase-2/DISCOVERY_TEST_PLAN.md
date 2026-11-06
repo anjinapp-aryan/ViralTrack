@@ -28,7 +28,7 @@ shown to return real items. This plan makes that observable.
 | D2 | Same with `sort="published_at"` | Ordered newest first; `published_at` aware and not in the future |
 | D3 | `min_views` above the largest sample view count | Empty page with the foundation's hint in `notes`; not an error |
 | D4 | `max_creator_followers` below the channel's subscribers | Items from that channel excluded; funnel/hint present |
-| D5 | `short_form=True` and `False` | Result sets differ only by the filter; no Short label unless approved (classification stays restricted) |
+| D5 | `short_form=True` and `False` | **Automated (F-6, 2026-11-06)**, `tests/test_discovery_d1_upstream.py::test_short_form_partitions_by_duration_on_the_real_route_phase_2_case_d5`: `True` keeps durations 1 to 180 s, `False` keeps the rest (0 s and unknown included), together they equal the unfiltered set; no Short label unless approved (classification stays restricted). The filter is a duration test applied by ViralTrack; the foundation's `is_short` is ignored |
 | D6 | `sort="outlier_score"`, `acceleration`, `views_per_follower` | `RestrictedMetric`, no request sent |
 | D7 | `niche="<label>"` for the keyword niche | Only items collected under that niche |
 | D8 | `limit` 1 and 100 | Honoured |
@@ -47,12 +47,13 @@ upstream (`application/discovery.py:311`, exercised offline by `tests/test_disco
 | `0` | Filter is **active**: keeps only channels with 0 or hidden subscribers |
 | negative | Filter active: keeps only hidden-subscriber channels |
 | empty string, `null`, `None` | HTTP 422 (not an integer) |
-| `2147483647` or `1000000000000` | Passes every channel in the test corpus (including hidden ones) |
+| `2147483647` or `1000000000000` | Passes every channel in the test corpus (including hidden ones). Upstream behaviour only: ViralTrack refuses anything above **1,000,000** (D3-07B), and this is not an "unlimited" setting |
 
-There is no literal "unbounded" over HTTP. A very large integer behaves as unbounded for any real channel, but that is
-an inference about YouTube data, not a guarantee. `min_views=0` does disable the views filter (the check is
-`if min_views:`). The current adapter cannot yet send an explicit subscriber bound when the caller leaves it unset
-(audit F-1), so this live case must wait for the D3 adapter fix or use the raw HTTP route.
+There is no literal "unbounded" over HTTP. A very large integer passes every channel of the test corpus, but that is
+an observation of the upstream filter, not a supported setting: the owner-approved maximum for ViralTrack is
+**1,000,000 subscribers**, a bounded discovery limit, and the adapter refuses a larger value before any request. `min_views=0` does disable the views filter (the check is
+`if min_views:`). Since the F-1/F-2 fix (2026-11-06) the adapter always sends both thresholds: an unset subscriber ceiling
+is sent as 1,000,000 and an unset minimum-views as 0, so the foundation's 10,000 defaults are never applied.
 
 ## 4. Offline groundwork (no quota, can run now)
 

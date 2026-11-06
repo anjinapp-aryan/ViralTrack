@@ -62,6 +62,10 @@ The foundation computing a metric does **not** authorize ViralTrack to show it.
 | semantic_score | semanticScore | embedding similarity for search ordering | INTERNAL_ONLY (not mapped) | |
 | — | outlierScoreRolling, outlierScorePeriod, ageHours, ageDays, snapshots | variants or bookkeeping | not mapped | |
 
+> **D3-05 (2026-11-06):** both 24-hour rates stay classified ALLOWED, but the adapter does not map them and refuses to sort by
+> them: the foundation reports no snapshot time, so how recent the window is cannot be known. They return when a verified
+> snapshot time is available. The policy counts (4 / 10 / 2) are unchanged.
+
 Channel-level values (momentum, grade, YPP eligibility, revenue range, projections, niche scores, niche ranking,
 policy signals, template risk, AI labels, sentiment, collaboration and sponsor scores) are **not mapped** by the
 adapter at all. The adapter's creator mapping reads only raw `subscribers` and `videoCount`.

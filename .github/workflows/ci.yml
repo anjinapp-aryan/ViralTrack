@@ -288,7 +288,7 @@ jobs:
           { echo "### Network diagnostics (informational)"; echo '```'; cat diagnostics.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       # The gate fails on a missing, empty, truncated or malformed report, on a missing summary, on any skip,
-      # failure or error, on a wrong file count, and unless exactly the nine known strict xfails are xfailed.
+      # failure or error, on a wrong file count, and unless exactly the known strict xfails (EXPECTED_XFAILS) are xfailed.
       - name: Enforce collection, skip and xfail rules
         if: always()
         run: |

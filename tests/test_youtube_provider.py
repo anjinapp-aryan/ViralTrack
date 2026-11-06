@@ -99,11 +99,16 @@ def test_discovery_maps_to_normalized_content():
 
 
 def test_shorts_filter_is_allowed_but_label_is_restricted():
-    rec = Recorder()
+    both = load_fixture("viral.json")["results"] + load_fixture("viral_shorts.json")["results"]
+    body = json.dumps({"results": both}).encode()
+    rec = Recorder(body=body)
     page = make_provider(rec).discover_content(DiscoveryQuery(short_form=True))
-    assert rec.requests[-1].url.params["only_shorts"] == "true"
+    # F-6: the foundation's Shorts filters are never used; ViralTrack filters on duration itself
+    assert rec.requests[-1].url.params["only_shorts"] == "false"
+    assert rec.requests[-1].url.params["exclude_shorts"] == "false"
+    assert {c.content_id for c in page.items} == {"fvid022", "fvid006"}
     assert {c.content_type for c in page.items} == {ContentType.VIDEO}
-    page = make_provider(Recorder(), AMENDMENT).discover_content(DiscoveryQuery(short_form=True))
+    page = make_provider(Recorder(body=body), AMENDMENT).discover_content(DiscoveryQuery(short_form=True))
     assert {c.content_type for c in page.items} == {ContentType.SHORT}
 
 
@@ -146,8 +151,8 @@ def test_raw_and_allowed_derived_by_default():
     c = make_provider(Recorder()).discover_content(DiscoveryQuery()).items[0]
     assert {m.name for m in c.metrics} == {"views", "likes", "comments"}
     assert all(m.provenance.source == "youtube-data-api" for m in c.metrics)
-    assert {m.name for m in c.derived} == {
-        "engagement_rate", "views_per_hour_lifetime", "views_per_hour_24h", "views_gained_24h"}
+    # the 24-hour rates are withheld (D3-05): the foundation reports no snapshot time
+    assert {m.name for m in c.derived} == {"engagement_rate", "views_per_hour_lifetime"}
     assert all(m.provenance.source == "niche-finder" and "not a YouTube metric" in m.provenance.note
                for m in c.derived)
 
@@ -277,10 +282,12 @@ def test_engagement_rate_omitted_when_likes_are_hidden():
 
 def test_allowed_derived_sort_and_unknown_sort():
     rec = Recorder()
-    make_provider(rec).discover_content(DiscoveryQuery(sort="views_per_hour_24h"))
-    assert rec.requests[-1].url.params["sort_by"] == "vph"
+    make_provider(rec).discover_content(DiscoveryQuery(sort="published_at"))
+    assert rec.requests[-1].url.params["sort_by"] == "published"
+    sent = len(rec.requests)
     with pytest.raises(ValueError):
         make_provider(rec).discover_content(DiscoveryQuery(sort="random"))
+    assert len(rec.requests) == sent
 
 
 # demo / test / real data ------------------------------------------------------

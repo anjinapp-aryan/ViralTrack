@@ -6,6 +6,7 @@ Needs VT_TEST_DATABASE_URL and VT_TEST_UPSTREAM_PYTHON for the replay tests; str
 
 import dataclasses
 import json
+from datetime import datetime, timezone
 
 import httpx
 import pytest
@@ -51,6 +52,8 @@ def replay(pg_schema):  # noqa: F811
     status, body = result["responses"][0]["status"], result["responses"][0]["body"]
     assert status == 200
     provider = make_provider(lambda request: httpx.Response(200, json=body))
+    # the corpus dates are relative to the real current time; a fixed earlier clock would make them "future"
+    provider._clock = lambda: datetime.now(timezone.utc)
     return body, provider.discover_content(DiscoveryQuery(limit=100)), schema
 
 
@@ -125,10 +128,6 @@ def test_every_restricted_or_internal_metric_is_refused_as_a_sort_before_any_req
     [
         ("views", "views"),
         ("published_at", "published"),
-        ("views_per_hour_lifetime", "vph_lifetime"),
-        ("views_per_hour_24h", "vph"),
-        ("views_gained_24h", "velocity"),
-        ("engagement_rate", "engagement"),
     ],
 )
 def test_only_approved_metrics_and_raw_values_can_be_requested_as_the_order(sort, upstream):
@@ -148,7 +147,7 @@ def test_the_default_upstream_order_is_a_restricted_score_so_it_must_never_be_re
     assert rec.requests[0].url.params["sort_by"] == "views"
 
 
-def test_ordering_by_lifetime_velocity_follows_the_approved_metric_not_a_hidden_score(pg_schema):  # noqa: F811
+def test_upstream_lifetime_ordering_follows_its_own_metric_though_viraltrack_no_longer_requests_it(pg_schema):  # noqa: F811
     conn, schema = pg_schema
     corpus.seed(conn, schema)
     body = run_upstream(schema, [f"/api/viral?{QUERY}&sort_by=vph_lifetime"])["responses"][0]["body"]
@@ -188,29 +187,27 @@ def test_one_snapshot_is_not_a_trend(replay):
     assert not ({"views_per_hour_24h", "views_gained_24h"} & names(by_id(page)[one]))
 
 
-def test_two_snapshots_give_a_velocity_with_the_window_caveat_attached(replay):
-    _body, page, _ = replay
-    metric = by_id(page)[corpus.VIDEOS["s_recent_hi"].id].metric("views_per_hour_24h")
-    assert metric is not None and "window varies" in metric.provenance.note
-    assert metric.provenance.collected_at is None  # capture time stays unknown
+def test_two_snapshots_do_not_give_a_24_hour_velocity_because_their_recency_is_unknown(replay):
+    """D3-05: the foundation computes a rate (so it is in the raw body) but reports no snapshot time. The
+    24-hour rate is withheld, and neither the other 24-hour value nor a lifetime value stands in for it."""
+    body, page, _ = replay
+    video = corpus.VIDEOS["s_recent_hi"].id
+    assert next(r for r in body["results"] if r["videoId"] == video)["vph24h"] is not None
+    mapped = by_id(page)[video]
+    assert not ({"views_per_hour_24h", "views_gained_24h"} & names(mapped))
+    assert mapped.metric("views_per_hour_lifetime").provenance.note  # the lifetime value keeps its own label
 
 
-def test_a_two_hour_history_is_reported_as_a_24_hour_rate_with_only_the_generic_caveat(replay):
-    """KNOWN LIMIT (characterisation): the value is computed over 2 hours; the note says the window varies but
-    not what it was. The label says 24h."""
+def test_a_two_hour_history_is_not_relabelled_as_a_24_hour_rate(replay):
+    """D3-05: the foundation calls a 2-hour rate (100 views/hour) vph24h. ViralTrack withholds it."""
     body, page, _ = replay
     thin = corpus.VIDEOS["e_recent"].id
     assert next(r for r in body["results"] if r["videoId"] == thin)["vph24h"] == pytest.approx(100.0, abs=0.5)
-    metric = by_id(page)[thin].metric("views_per_hour_24h")
-    assert metric.value == pytest.approx(100.0, abs=0.5) and "window varies" in metric.provenance.note
+    mapped = by_id(page)[thin]
+    assert mapped.metric("views_per_hour_24h") is None and mapped.metric("views_gained_24h") is None
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="gap: velocity from snapshots that are weeks old is shown like a current one "
-    "(no snapshot time reaches ViralTrack, so staleness cannot be judged)",
-)
-def test_velocity_from_stale_snapshots_is_withheld_or_flagged(replay):
+def test_velocity_from_stale_snapshots_is_withheld_or_flagged(replay):  # D3-05: fixed; was a strict xfail
     body, page, _ = replay
     stale = corpus.VIDEOS["a_recent"].id  # both snapshots about 20 days old
     assert next(r for r in body["results"] if r["videoId"] == stale)["vph24h"] is not None
@@ -241,10 +238,26 @@ def test_no_approved_metric_is_ever_invented_for_undated_videos(replay):
     # produce a velocity (see known-gap test below)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="gap: an undated video gets a lifetime velocity computed from age 0 h (floored to 1 h)",
-)
-def test_an_undated_video_has_no_lifetime_velocity(replay):
+def test_an_undated_video_has_no_lifetime_velocity(replay):  # D3-06: fixed; was a strict xfail
     _body, page, _ = replay
     assert by_id(page)[corpus.VIDEOS["s_nopub"].id].metric("views_per_hour_lifetime") is None
+
+
+def test_upstream_ranks_an_undated_video_first_by_lifetime_velocity_so_viraltrack_refuses_that_sort(replay):
+    """EVIDENCE for the owner decision that removed the sort (D3).
+
+    Upstream gives an undated video an age of 0 h (floored to 1 h), so its lifetime rate is its views per
+    hour: 40,000 here, above every dated video (the best dated one is 4,687). Ordered by `vph_lifetime` it is
+    returned FIRST and uses a slot of `limit`, even though ViralTrack withholds the value. The adapter
+    therefore refuses the sort before any request; no local reordering is done instead."""
+    from tests.support.upstream import run_upstream
+
+    _body, _page, schema = replay
+    sorted_body = run_upstream(schema, [f"/api/viral?{QUERY}&sort_by=vph_lifetime"])["responses"][0]["body"]
+    first = sorted_body["results"][0]
+    assert first["videoId"] == corpus.VIDEOS["s_nopub"].id and first["publishedAt"] is None
+    assert first["vphLifetime"] == 40_000.0 > max(r["vphLifetime"] for r in sorted_body["results"][1:])
+    recorder = Recorder()
+    with pytest.raises(ValueError, match="undated"):
+        make_provider(recorder).discover_content(DiscoveryQuery(sort="views_per_hour_lifetime"))
+    assert recorder.requests == []

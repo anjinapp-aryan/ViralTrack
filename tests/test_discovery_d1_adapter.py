@@ -1,10 +1,9 @@
 """D1-A: adapter parameter semantics (offline; no network, no database, no credentials).
 
-`xfail(strict=True)` marks a verified DEFECT of the current adapter
-(see docs/phase-3/YOUTUBE_DISCOVERY_AUDIT.md).
-The test states the behaviour the audit says is required. It fails today, so the suite stays green and the
-defect stays visible; when the adapter is fixed (D3) the test passes, strict mode turns that into a failure,
-and the marker must be removed. Production code is deliberately untouched in D1.
+These tests began as `xfail(strict=True)` markers for verified defects of the adapter (see
+docs/phase-3/YOUTUBE_DISCOVERY_AUDIT.md). D3 and the F-1/F-2 fix resolved every one of them, so none
+remains and the CI gate (tests/support/ci_checks.py) expects no xfail at all. A new known defect would
+be added as a strict xfail and listed there in the same change.
 """
 
 import json
@@ -20,7 +19,6 @@ from viraltrack.providers import DiscoveryQuery
 from viraltrack.providers.youtube.client import FoundationClient
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFECT = "audit F-1: the adapter omits unset filters, so the foundation applies its own 10,000 defaults"
 
 
 def viral_params(query: DiscoveryQuery) -> dict:
@@ -33,18 +31,17 @@ def viral_params(query: DiscoveryQuery) -> dict:
 # ---- the root-cause regression ----
 
 
-@pytest.mark.xfail(strict=True, reason=DEFECT)
 def test_an_unset_subscriber_filter_must_not_fall_back_to_the_foundation_default():
-    assert "max_subscribers" in viral_params(DiscoveryQuery())
+    """F-1: fixed; was a strict xfail. Unset is the approved bounded maximum, never the upstream 10,000."""
+    assert viral_params(DiscoveryQuery())["max_subscribers"] == "1000000"
 
 
-@pytest.mark.xfail(strict=True, reason=DEFECT)
 def test_an_unset_minimum_views_filter_must_not_fall_back_to_the_foundation_default():
-    assert "min_views" in viral_params(DiscoveryQuery())
+    """F-1: fixed; was a strict xfail. Unset is 0, which the foundation treats as 'no views filter'."""
+    assert viral_params(DiscoveryQuery())["min_views"] == "0"
 
 
-@pytest.mark.xfail(strict=True, reason=DEFECT)
-def test_the_batch_5_query_sends_every_threshold_explicitly():
+def test_the_batch_5_query_sends_every_threshold_explicitly():  # F-1/F-2: fixed; was a strict xfail
     """The exact query of the Batch 5 discovery call."""
     sent = viral_params(DiscoveryQuery(period="30d", limit=100, sort="views"))
     assert {"max_subscribers", "min_views", "min_views_per_subscriber"} <= set(sent)
@@ -152,10 +149,7 @@ def test_an_unknown_or_malformed_total_stays_unknown(matched):
     assert page(body).total is None
 
 
-@pytest.mark.xfail(
-    strict=True, reason="gap: a JSON boolean is accepted as a count (bool is an int in Python)"
-)
-def test_a_boolean_total_is_not_a_count():
+def test_a_boolean_total_is_not_a_count():  # D3-04: fixed; was a strict xfail
     assert page({"matched": True, "results": [video(1)]}).total is None
 
 
@@ -223,20 +217,18 @@ def test_a_candidate_without_ids_is_an_error():
         page({"results": [{"title": "no ids"}]})
 
 
-@pytest.mark.xfail(strict=True, reason="gap: entries that are not objects are dropped without being counted")
 def test_invalid_entries_are_not_silently_dropped():
-    result = page({"matched": 3, "results": [video(1), "garbage", None]})
-    assert len(result.items) == 1 and any("dropped" in note or "invalid" in note for note in result.notes)
+    """D3-02: fixed; was a strict xfail. The contract is now stricter than a note: the response is refused."""
+    with pytest.raises(ProviderError, match=r"results\[1\]"):
+        page({"matched": 3, "results": [video(1), "garbage", None]})
 
 
-@pytest.mark.xfail(strict=True, reason="gap: duplicate video ids in one response are returned twice")
-def test_duplicate_video_ids_in_one_response_are_collapsed_or_flagged():
+def test_duplicate_video_ids_in_one_response_are_collapsed_or_flagged():  # D3-03: fixed; was a strict xfail
     result = page({"matched": 2, "results": [video(1), video(1)]})
-    assert len({c.content_id for c in result.items}) == len(result.items) or result.notes
+    assert len({c.content_id for c in result.items}) == len(result.items) == 1 and result.notes
 
 
-@pytest.mark.xfail(strict=True, reason="gap: the foundation's funnel is not surfaced by the adapter (D3)")
-def test_the_foundations_funnel_reaches_the_caller():
+def test_the_foundations_funnel_reaches_the_caller():  # D3-01: fixed; was a strict xfail
     body = {
         "matched": 0,
         "results": [],

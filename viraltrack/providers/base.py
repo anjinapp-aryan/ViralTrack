@@ -27,7 +27,10 @@ class DiscoveryQuery:
     """Ranked discovery over what the provider has collected."""
     period: str = "7d"               # e.g. 24h, 7d, 30d
     limit: int = 24
-    short_form: bool | None = None   # True = only short-form, False = exclude, None = both
+    # A DURATION filter on raw metadata, not YouTube's Shorts classification: True = only videos of at most
+    # 180 s (inclusive, more than 0), False = everything else, None = both. A video with a zero, missing or
+    # invalid duration is not short. Applied by ViralTrack; the foundation's own `is_short` is ignored.
+    short_form: bool | None = None
     region: str | None = None
     niche: str | None = None
     max_creator_followers: int | None = None
@@ -42,7 +45,7 @@ class SearchQuery:
     text: str | None = None
     period: str = "all"
     limit: int = 30
-    short_form: bool | None = None
+    short_form: bool | None = None   # a duration filter (<= 180 s), see DiscoveryQuery.short_form
     niche: str | None = None
     sort: str = "views"   # ignored by providers that order text searches by relevance
 

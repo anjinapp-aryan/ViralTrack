@@ -352,7 +352,7 @@ def test_the_search_route_has_no_default_thresholds(seeded):
     assert status == 200 and len(body["results"]) == 13
 
 
-def test_batch_5_replay_old_adapter_query_returns_zero_with_the_recorded_funnel(pg_schema):  # noqa: F811
+def test_batch_5_replay_the_adapter_query_keeps_candidates_and_the_old_query_loses_them(pg_schema):  # noqa: F811
     """Batch 5 shape: 70 videos, 3 in 30 days, all on channels above 10,000 subscribers."""
     conn, schema = pg_schema
     corpus.seed(conn, schema, channels=corpus.B5_CHANNELS, videos=corpus.b5_videos())
@@ -367,16 +367,25 @@ def test_batch_5_replay_old_adapter_query_returns_zero_with_the_recorded_funnel(
     YouTubeProvider(settings.youtube, http_client=httpx.Client(transport=transport)).discover_content(
         DiscoveryQuery(period="30d", limit=100, sort="views")
     )
-    sent = recorded[0].url
-    body = viral(schema, str(sent.query, "ascii"))
-    assert steps(body) == [
+    sent = str(recorded[0].url.query, "ascii")
+    # F-1/F-2 fixed: the adapter now names both thresholds, so the same query keeps most of what it lost
+    assert "max_subscribers=1000000" in sent and "min_views=0" in sent
+    body = viral(schema, sent)
+    assert steps(body) == [("videos in window", 3), ("channel subs <= 1,000,000", 2)]
+    assert body["matched"] == 2
+    # root cause, kept as evidence: the same request without the two thresholds (the old adapter query)
+    # falls back to upstream's 10,000 defaults and loses everything
+    old = "&".join(p for p in sent.split("&") if not p.startswith(("max_subscribers=", "min_views=")))
+    lost = viral(schema, old)
+    assert steps(lost) == [
         ("videos in window", 3),
         ("channel subs <= 10,000", 0),
         ("video views >= 10,000", 0),
     ]
-    assert body["matched"] == 0
-    fixed = viral(schema, f"{sent.query.decode()}&max_subscribers={BIG}&min_views=0")
-    assert fixed["matched"] == 3  # what an explicit request would have returned
+    assert lost["matched"] == 0
+    unbounded = viral(schema, f"{old}&max_subscribers={BIG}&min_views=0")
+    # a 32-bit probe finds all 3; the approved bound of 1,000,000 excludes the one channel above it
+    assert unbounded["matched"] == 3
 
 
 def test_the_discovery_responses_were_produced_without_any_network_attempt(seeded):
@@ -389,3 +398,146 @@ def test_the_adapter_page_matches_what_the_foundation_returned(seeded):
     provider = make_provider(lambda request: httpx.Response(200, json=body))
     page = provider.discover_content(DiscoveryQuery(limit=100))
     assert page.total == 13 and [c.content_id for c in page.items] == ids(body)
+
+
+# ---- F-1/F-2: the adapter's own request, replayed against the real upstream route ----
+
+
+def adapter_query(**fields) -> str:
+    """The exact query string the adapter sends to /api/viral for a DiscoveryQuery."""
+    from tests.test_youtube_provider import Recorder
+
+    recorder = Recorder()
+    make_provider(recorder).discover_content(DiscoveryQuery(period="all", limit=100, **fields))
+    return next(r for r in recorder.requests if r.url.path == "/api/viral").url.query.decode()
+
+
+def test_an_unset_query_reaches_the_real_upstream_with_the_bounded_thresholds_not_its_defaults(seeded):
+    sent = adapter_query()
+    assert "max_subscribers=1000000" in sent and "min_views=0" in sent
+    body = viral(seeded[1], sent)
+    # the funnel proves which thresholds ran: the 10,000 defaults would add "channel subs <= 10,000"
+    # and a views step
+    assert [step for step, _ in steps(body)] == ["videos in window", "channel subs <= 1,000,000"]
+    assert not any("10,000" in step for step, _ in steps(body))
+    # and the result equals the one the earlier probe (a 32-bit sentinel, min_views=0) gave for this corpus
+    assert set(ids(body)) == set(ids(viral(seeded[1], f"{ALL}&max_subscribers={BIG}&min_views=0&limit=100")))
+
+
+def test_a_supplied_threshold_replaces_the_default_exactly(seeded):
+    body = viral(seeded[1], adapter_query(max_creator_followers=5000, min_views=1000))
+    assert ("channel subs <= 5,000", remaining(body)[1]) in steps(body)
+    assert any(step == "video views >= 1,000" for step, _ in steps(body))
+
+
+# ---- F-6: short_form is a duration filter applied by ViralTrack (owner decision) ----
+
+SHORT_DURATIONS = [0, 1, 59, 179, 180, 181, 240, 600]
+
+
+def seed_durations(conn, schema, durations=SHORT_DURATIONS):
+    videos = {
+        f"d{d}": corpus.Video(f"d{d}", 400 + i, "SMALL", 1, 5000, 10, 1, duration=d)
+        for i, d in enumerate(durations)
+    }
+    corpus.seed(conn, schema, videos=videos)
+    return videos
+
+
+def adapter_page(schema, **fields):
+    """The adapter's own request replayed on the real upstream route, then mapped by the adapter."""
+    from tests.test_youtube_provider import Recorder
+
+    recorder = Recorder()
+    make_provider(recorder).discover_content(DiscoveryQuery(period="all", limit=100, **fields))
+    sent = next(r for r in recorder.requests if r.url.path == "/api/viral")
+    body = viral(schema, sent.url.query.decode())
+    provider = make_provider(lambda request: httpx.Response(200, json=body))
+    return body, provider.discover_content(DiscoveryQuery(period="all", limit=100, **fields))
+
+
+def durations_of(page) -> list[int]:
+    return sorted(c.duration_seconds for c in page.items)
+
+
+def test_the_upstream_shorts_threshold_is_the_180_seconds_the_policy_assumes():
+    tree = ast.parse(Path(UPSTREAM_BACKEND / "domain" / "metrics.py").read_text(encoding="utf-8"))
+    values = [
+        n.value.value
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Assign) and any(getattr(t, "id", "") == "SHORTS_MAX_SECONDS" for t in n.targets)
+    ]
+    assert values == [180]
+
+
+def test_short_form_partitions_by_duration_on_the_real_route_phase_2_case_d5(pg_schema):  # noqa: F811
+    """D5: true and false differ only by the filter; together they are the unfiltered set."""
+    conn, schema = pg_schema
+    seed_durations(conn, schema)
+    _, everything = adapter_page(schema)
+    _, only_short = adapter_page(schema, short_form=True)
+    _, not_short = adapter_page(schema, short_form=False)
+    assert durations_of(everything) == sorted(SHORT_DURATIONS)
+    assert durations_of(only_short) == [1, 59, 179, 180]
+    assert durations_of(not_short) == [0, 181, 240, 600]
+    assert {c.content_id for c in only_short.items} | {c.content_id for c in not_short.items} == {
+        c.content_id for c in everything.items
+    }
+    assert not {c.content_id for c in only_short.items} & {c.content_id for c in not_short.items}
+
+
+def test_the_foundations_stored_is_short_flag_does_not_override_the_policy(pg_schema):  # noqa: F811
+    conn, schema = pg_schema
+    videos = seed_durations(conn, schema, [60, 600])
+    short, long = videos["d60"].id, videos["d600"].id
+    with conn.cursor() as cur:  # conflicting flags: the 60 s video NOT short, the 600 s video short
+        cur.execute(f"UPDATE {schema}.videos SET is_short = 0 WHERE video_id = %s", (short,))
+        cur.execute(f"UPDATE {schema}.videos SET is_short = 1 WHERE video_id = %s", (long,))
+    conn.commit()
+    flagged = viral(schema, f"{ALL}&only_shorts=true&max_subscribers={BIG}&min_views=0&limit=100")
+    assert ids(flagged) == [long]  # upstream's filter follows the stored flag, so it is not used
+    body, only_short = adapter_page(schema, short_form=True)
+    _, not_short = adapter_page(schema, short_form=False)
+    assert [c.content_id for c in only_short.items] == [short]
+    assert [c.content_id for c in not_short.items] == [long]
+
+
+def test_the_shorts_filter_adds_no_funnel_stage_and_does_not_change_the_funnel(pg_schema):  # noqa: F811
+    conn, schema = pg_schema
+    seed_durations(conn, schema)
+    n = len(SHORT_DURATIONS)
+    expected = [("videos in window", n), ("channel subs <= 1,000,000", n)]
+    for state in (None, True, False):
+        body, page = adapter_page(schema, short_form=state)
+        assert steps(body) == expected  # upstream no longer filters Shorts, so its first count includes them
+        assert [(s.step, s.remaining) for s in page.funnel] == expected
+
+
+# ---- engagement-rate audit (characterisation, evidence for removing the sort) ----
+
+
+def test_upstream_orders_by_an_engagement_rate_that_counts_hidden_likes_as_zero(pg_schema):  # noqa: F811
+    conn, schema = pg_schema
+    v = corpus.Video
+    videos = {
+        "a": v("a", 301, "SMALL", 1, 10000, 500, 100),  # 6.0 %
+        "b": v("b", 302, "SMALL", 1, 10000, 200, 100),  # 3.0 %
+        "hidden_c": v("hidden_c", 303, "SMALL", 1, 10000, None, 300),  # likes hidden
+        "hidden_0": v("hidden_0", 304, "SMALL", 1, 10000, None, 0),  # likes hidden, no comments
+        "hidden_both": v("hidden_both", 305, "SMALL", 1, 10000, None, None),
+        "no_views": v("no_views", 306, "SMALL", 1, None, 5, 5),
+    }
+    corpus.seed(conn, schema, videos=videos)
+    body = viral(schema, f"{ALL}&max_subscribers={BIG}&min_views=0&limit=100&sort_by=engagement")
+    rate = {r["videoId"]: r["engagementRate"] for r in body["results"]}
+    assert rate[videos["a"].id] == 6.0 and rate[videos["b"].id] == 3.0
+    assert rate[videos["hidden_c"].id] == 3.0  # hidden likes counted as 0: ties with a visible 3.0 %
+    assert rate[videos["hidden_0"].id] == 0.0  # hidden likes and no comments: a rate of zero
+    assert rate[videos["hidden_both"].id] is None and rate[videos["no_views"].id] is None
+    order = ids(body)
+    assert order.index(videos["hidden_c"].id) < order.index(videos["hidden_both"].id)  # made-up value
+    # ViralTrack shows none of those hidden-likes values (it omits the rate), and no longer sorts by it
+    _, page = adapter_page(schema)
+    shown = {c.content_id: c.metric("engagement_rate") for c in page.items}
+    assert shown[videos["hidden_c"].id] is None and shown[videos["hidden_0"].id] is None
+    assert shown[videos["a"].id].value == 6.0

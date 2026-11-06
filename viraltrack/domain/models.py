@@ -127,7 +127,22 @@ class Content:
 
 
 @dataclass(frozen=True)
+class FunnelStage:
+    """One step of a discovery funnel: how many items were left after `step` was applied."""
+    step: str
+    remaining: int
+
+    def __post_init__(self):
+        if not isinstance(self.step, str) or not self.step.strip():
+            raise ValueError("a funnel step needs a non-empty name")
+        if isinstance(self.remaining, bool) or not isinstance(self.remaining, int) or self.remaining < 0:
+            raise ValueError("a funnel count must be a non-negative integer (a boolean is not a count)")
+
+
+@dataclass(frozen=True)
 class ContentPage:
     items: tuple[Content, ...]
     total: int | None = None
     notes: tuple[str, ...] = field(default_factory=tuple)
+    # None: the provider reported no funnel (unknown). (): it reported an empty one. Never inferred.
+    funnel: tuple[FunnelStage, ...] | None = None

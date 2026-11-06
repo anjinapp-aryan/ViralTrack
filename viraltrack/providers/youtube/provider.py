@@ -32,7 +32,9 @@ from viraltrack.providers.youtube import ingestion, mapping
 from viraltrack.providers.youtube.client import PROVIDER_ID, FoundationClient
 from viraltrack.providers.youtube.metric_policy import youtube_metric_policy
 
-_PERIOD = re.compile(r"^(all|\d{1,4}[hd])$")
+# A period: `all`, or a whole number of hours or days from 1 to 9999, lowercase, no leading zero. The
+# foundation would also accept uppercase, zero, aliases and `m` (30 days); none of that is accepted here.
+_PERIOD = re.compile(r"all|[1-9][0-9]{0,3}[hd]")
 # Keyword collection: `all`, or a whole number of hours or days from 1 to 9999, lowercase, no leading zero.
 _COLLECT_PERIOD = re.compile(r"all|[1-9][0-9]{0,3}[hd]")
 _REGION = re.compile(r"^[A-Z]{2}$")
@@ -41,13 +43,16 @@ _LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$")
 # ViralTrack sort key -> niche-finder `sort_by` (upstream discovery.SORTS).
 # niche-finder's own defaults ("viral", "outlier") rank by RESTRICTED scores, so
 # the adapter always sends an explicit sort that the policy has cleared.
+#
+# `_SORTS` and `_SORTS_NEEDING_APPROVAL` are the ONLY orders ViralTrack will request (D3-07): anything else is
+# refused before a request is made, so an unknown name can never reach the foundation, which would otherwise
+# fall back to its restricted `viral` order. A new order is added here and nowhere else.
 _SORTS = {
     "views": "views",
     "published_at": "published",
-    "views_per_hour_24h": "vph",
-    "views_per_hour_lifetime": "vph_lifetime",
-    "views_gained_24h": "velocity",
-    "engagement_rate": "engagement",
+}
+# Restricted metrics: refused (RestrictedMetric) until the policy carries their approval.
+_SORTS_NEEDING_APPROVAL = {
     "acceleration": "acceleration",
     "views_per_follower": "vsr",
     "outlier_score": "outlier",
@@ -55,6 +60,18 @@ _SORTS = {
     "viral_score": "viral",
 }
 _RAW_SORTS = {"views", "published_at"}
+# Orders that are refused outright, with the reason. Ordering by a value discloses it, and the foundation's
+# order can be wrong even where the value is hidden, so these are not sortable at all (owner decisions, D3).
+_REFUSED_SORTS = {
+    "views_per_hour_24h": "the foundation reports no snapshot time, so the recency of the rate is unknown",
+    "views_gained_24h": "the foundation reports no snapshot time, so the recency of the rate is unknown",
+    "views_per_hour_lifetime": "the foundation ranks an undated video by a fabricated rate (age 0 h) and "
+                               "places it first; hiding the value does not remove it from the ordering",
+    "engagement_rate": "the foundation counts a hidden like count as zero when it orders by this rate, so a "
+                       "video with hidden likes is placed by an understated value that ViralTrack omits",
+}
+# The most subscribers a discovery query may allow a channel to have: a bounded limit, never "no limit".
+MAX_CREATOR_FOLLOWERS = 1_000_000
 
 CAPABILITIES = PlatformCapabilities({
     Capability.DISCOVER_CONTENT: CapabilityInfo(
@@ -72,8 +89,9 @@ CAPABILITIES = PlatformCapabilities({
         False, "chart=mostPopular covers only Music, Movies and Gaming since 2025-07-21; "
                "YouTube offers no general trending feed"),
     Capability.SHORT_FORM: CapabilityInfo(
-        True, "Filter by duration <= 180 s; the 'short' label itself is RESTRICTED "
-              "(the API has no Shorts flag)"),
+        True, "Duration filter on raw metadata (<= 180 s inclusive; zero, missing or invalid duration is "
+              "not short), applied by ViralTrack. Not YouTube's Shorts classification; the 'short' label "
+              "itself is RESTRICTED (the API has no Shorts flag)"),
     Capability.ENGAGEMENT_METRICS: CapabilityInfo(True, "likeCount, commentCount"),
     Capability.HASHTAGS: CapabilityInfo(False, "not exposed by the foundation's read API"),
     Capability.AUDIO: CapabilityInfo(False, "no YouTube API for trending audio"),
@@ -94,8 +112,9 @@ CAPABILITIES = PlatformCapabilities({
 
 
 def _check_period(period: str) -> str:
-    if not _PERIOD.match(period):
-        raise ValueError(f"period must look like 24h, 7d or all, got {period!r}")
+    if not isinstance(period, str) or not _PERIOD.fullmatch(period):
+        raise ValueError("period must be 'all' or a whole number of hours or days from 1 to 9999, "
+                         f"lowercase, such as 24h or 7d, got {period!r}")
     return period
 
 
@@ -122,12 +141,27 @@ def _path_id(value: str) -> str:
     return quote(value, safe="")
 
 
-def _shorts_params(short_form: bool | None) -> dict:
-    if short_form is True:
-        return {"only_shorts": "true", "exclude_shorts": "false"}
-    if short_form is False:
-        return {"only_shorts": "false", "exclude_shorts": "true"}
-    return {"only_shorts": "false", "exclude_shorts": "false"}
+# The foundation's Shorts filters are never used: it decides "short" from a stored `is_short` flag before the
+# duration, and the owner-approved `short_form` policy is a duration test (<= 180 s inclusive, unknown is not
+# short). Both are sent as false explicitly (its /api/viral default would exclude Shorts), and ViralTrack
+# applies the filter itself on `lengthSeconds`.
+_NO_UPSTREAM_SHORTS_FILTER = {"only_shorts": "false", "exclude_shorts": "false"}
+# With `short_form` set the foundation is asked for this many candidates, in the requested order, so that the
+# duration filter has enough to choose `limit` items from; the foundation has no upper cap on `limit`.
+_SHORT_FORM_FETCH_LIMIT = 1000
+
+
+def _short_form_limit(query) -> tuple[int, int]:
+    """(limit to send, limit to return), validated before any request. There is no pagination: one page of
+    1 to 1000 items (the foundation has no offset and no cap; 1000 is ViralTrack's own bound)."""
+    wanted = query.limit
+    if isinstance(wanted, bool) or not isinstance(wanted, int) or not 1 <= wanted <= _SHORT_FORM_FETCH_LIMIT:
+        raise ValueError(f"limit must be a whole number from 1 to {_SHORT_FORM_FETCH_LIMIT}, got {wanted!r}")
+    if query.short_form is None:
+        return wanted, wanted
+    if not isinstance(query.short_form, bool):
+        raise ValueError(f"short_form must be True, False or None, got {query.short_form!r}")
+    return max(wanted, _SHORT_FORM_FETCH_LIMIT), wanted
 
 
 class YouTubeProvider(PlatformProvider):
@@ -156,51 +190,84 @@ class YouTubeProvider(PlatformProvider):
                                       retrieved_at=self._clock())
 
     def _sort(self, key: str) -> str:
-        upstream = _SORTS.get(key)
+        if not isinstance(key, str):
+            raise ValueError(f"sort must be text, got {type(key).__name__}")
+        upstream = _SORTS.get(key) or _SORTS_NEEDING_APPROVAL.get(key)
         if upstream is None:
+            if key in _REFUSED_SORTS:
+                raise ValueError(f"sort {key!r} is not available: {_REFUSED_SORTS[key]}")
             raise ValueError(f"unknown sort {key!r}; use one of {', '.join(_SORTS)}")
         if key not in _RAW_SORTS:
             # ordering by a value discloses it, so it needs the same clearance as showing it
             self.metric_policy.require(key)
         return upstream
 
-    def _page(self, body: dict) -> ContentPage:
+    def _page(self, body: dict, short_form: bool | None = None, limit: int | None = None) -> ContentPage:
         results = body.get("results")
         if not isinstance(results, list):
             raise ProviderError(PROVIDER_ID, "response has no results list")
         ctx = self._ctx()
-        items = tuple(mapping.map_video(r, ctx) for r in results if isinstance(r, dict))
-        notes = tuple(n for n in (body.get("hint"),) if isinstance(n, str) and n)
-        total = body.get("matched")
-        return ContentPage(items=items, total=total if isinstance(total, int) else None,
-                           notes=notes)
+        # D3-02: an entry that is not a valid video object fails the whole response (the same contract as an
+        # item without ids); nothing is dropped silently and nothing malformed becomes a default.
+        mapped = []
+        for index, entry in enumerate(results):
+            try:
+                mapped.append(mapping.map_video(entry, ctx))
+            except ProviderError as exc:
+                raise ProviderError(PROVIDER_ID, f"results[{index}] is invalid: {exc.args[-1]}") from exc
+        items, notes = _first_of_each(mapped)
+        hint = body.get("hint")
+        if isinstance(hint, str) and hint and not mapping.mentions_restricted_metric(hint):
+            notes = (hint, *notes)
+        funnel, funnel_note = mapping.map_funnel(body.get("funnel"))
+        if funnel_note:
+            notes += (funnel_note,)
+        total = mapping.count(body.get("matched"))
+        if short_form is not None:
+            items = tuple(c for c in items if mapping.is_short_form(c.duration_seconds) is short_form)[:limit]
+            total = None    # the foundation's total counts videos of every duration
+            notes += (f"short_form is a duration filter (<= {mapping.SHORT_FORM_MAX_SECONDS} s, a video with "
+                      "no known duration is not short) applied by ViralTrack after the foundation's funnel, "
+                      "which therefore counts videos of every duration",)
+            if len(results) >= _SHORT_FORM_FETCH_LIMIT:
+                notes += (f"the filter saw only the first {_SHORT_FORM_FETCH_LIMIT} candidates",)
+        return ContentPage(items=items, total=total, notes=notes, funnel=funnel)
 
     def discover_content(self, query: DiscoveryQuery) -> ContentPage:
+        # Both thresholds are always sent. The foundation applies max_subscribers=10,000 and min_views=10,000
+        # to any request that omits them (and the HTTP client drops None), so "unset" is made explicit here.
+        followers = _bounded_followers(query.max_creator_followers)
+        min_views = _min_views(query.min_views)
+        fetch, wanted = _short_form_limit(query)
+        region = query.region
+        if region is not None and (not isinstance(region, str) or not _REGION.fullmatch(region)):
+            raise ValueError(f"region must be an ISO 3166-1 alpha-2 code like US, got {region!r}")
         params = {
             "period": _check_period(query.period),
             "sort_by": self._sort(query.sort),
-            "limit": query.limit,
+            "limit": fetch,
             "region": query.region,
             "niche": query.niche,
-            "max_subscribers": query.max_creator_followers,
-            "min_views": query.min_views,
+            "max_subscribers": followers,
+            "min_views": min_views,
             # niche-finder filters by views per subscriber >= 1.0 unless told otherwise;
             # that metric is RESTRICTED, so it must not shape the result set either.
             "min_views_per_subscriber": 0,
-            **_shorts_params(query.short_form),
+            **_NO_UPSTREAM_SHORTS_FILTER,
         }
-        return self._page(self._client.get("/api/viral", params))
+        return self._page(self._client.get("/api/viral", params), query.short_form, wanted)
 
     def search_content(self, query: SearchQuery) -> ContentPage:
+        fetch, wanted = _short_form_limit(query)
         params = {
             "query": query.text,
             "period": _check_period(query.period),
             "sort_by": self._sort(query.sort),
-            "limit": query.limit,
+            "limit": fetch,
             "niche": query.niche,
-            **_shorts_params(query.short_form),
+            **_NO_UPSTREAM_SHORTS_FILTER,
         }
-        return self._page(self._client.get("/api/search", params))
+        return self._page(self._client.get("/api/search", params), query.short_form, wanted)
 
     def get_creator(self, creator_id: str) -> Creator:
         return mapping.map_channel(self._client.get(f"/api/channels/{_path_id(creator_id)}"), self._ctx())
@@ -295,6 +362,47 @@ class YouTubeProvider(PlatformProvider):
             if exc.retry_after:
                 self._cooldown_until = self._clock() + timedelta(seconds=exc.retry_after)
             raise
+
+
+def _bounded_followers(value: int | None) -> int:
+    """The subscriber ceiling to send: unset is the approved maximum (a bounded limit, never "no limit");
+    a given value must be a whole number from 0 to that maximum. 0 keeps only channels with 0 or hidden
+    subscribers."""
+    if value is None:
+        return MAX_CREATOR_FOLLOWERS
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= MAX_CREATOR_FOLLOWERS:
+        raise ValueError(f"max_creator_followers must be a whole number from 0 to "
+                         f"{MAX_CREATOR_FOLLOWERS:,} (a bounded limit), got {value!r}")
+    return value
+
+
+def _min_views(value: int | None) -> int:
+    """The minimum views to send: unset is 0, which the foundation treats as "no views filter"."""
+    if value is None:
+        return 0
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"min_views must be a whole number of 0 or more, got {value!r}")
+    return value
+
+
+def _first_of_each(contents: list) -> tuple[tuple, tuple[str, ...]]:
+    """One item per video id, in the foundation's order: the first occurrence wins (that is its rank) and
+    later ones are dropped whole, never merged. Only the canonical id is compared. A note says how many were
+    dropped and how many differed from the first, so a collapse is never silent."""
+    first: dict = {}
+    dropped = different = 0
+    for content in contents:
+        kept = first.get(content.content_id)
+        if kept is None:
+            first[content.content_id] = content
+            continue
+        dropped += 1
+        different += content != kept
+    notes = ()
+    if dropped:
+        notes = (f"{dropped} duplicate video id entr{'y' if dropped == 1 else 'ies'} dropped "
+                 f"({different} with different data); the first occurrence of each id was kept",)
+    return tuple(first.values()), notes
 
 
 def _ref(value: str) -> str:

@@ -37,7 +37,7 @@ def run(*args, env=None, cwd=None):
 
 
 def junit(xfails=None, skips=0, failures=0, errors=0, drop_from=None):
-    """A JUnit report shaped like the job's: each file at its minimum, the nine known xfails, no more."""
+    """A JUnit report shaped like the job's: each file at its minimum, the known xfails, no more."""
     xfails = cc.EXPECTED_XFAILS if xfails is None else xfails
     cases = []
     for rel, minimum in cc.EXPECTED_MINIMUM.items():
@@ -92,7 +92,7 @@ def test_a_valid_report_passes_and_writes_its_summary(tmp_path):
     done, summary = gate(tmp_path, write(tmp_path, junit()))
     assert done.returncode == 0, done.stdout
     assert cc.SUMMARY_HEADER in summary.read_text(encoding="utf-8")
-    assert "PROBLEM" not in done.stdout and "xfailed: 9" in done.stdout
+    assert "PROBLEM" not in done.stdout and "xfailed: 0" in done.stdout
 
 
 def test_a_missing_report_fails_and_still_writes_a_summary(tmp_path):
@@ -138,23 +138,20 @@ def test_a_file_with_fewer_tests_than_recorded_fails(tmp_path):
     assert done.returncode == 1 and "COLLECTION tests/test_collect_period.py" in done.stdout
 
 
-def test_fewer_than_nine_xfails_fails(tmp_path):
-    done, _ = gate(tmp_path, write(tmp_path, junit(xfails=set(sorted(cc.EXPECTED_XFAILS)[:8]))))
-    assert done.returncode == 1 and "XFAIL" in done.stdout
-
-
-def test_more_than_nine_xfails_fails(tmp_path):
+def test_more_xfails_than_expected_fails(tmp_path):
     extra = set(cc.EXPECTED_XFAILS) | {"tests.test_collect_period::test_something_new_that_is_xfailed"}
     done, _ = gate(tmp_path, write(tmp_path, junit(xfails=extra)))
     assert done.returncode == 1 and "XFAIL" in done.stdout
 
 
-def test_nine_xfails_with_a_swapped_name_fails(tmp_path):
-    swapped = (set(cc.EXPECTED_XFAILS) - {sorted(cc.EXPECTED_XFAILS)[0]}) | {
-        "tests.test_discovery_d1_adapter::test_a_different_test"
-    }
-    done, _ = gate(tmp_path, write(tmp_path, junit(xfails=swapped)))
-    assert done.returncode == 1 and "XFAIL" in done.stdout
+def test_a_formerly_known_xfail_is_unexpected_now_that_none_is_expected(tmp_path):
+    former = {"tests.test_discovery_d1_adapter::test_the_batch_5_query_sends_every_threshold_explicitly"}
+    done, _ = gate(tmp_path, write(tmp_path, junit(xfails=former)))
+    assert done.returncode == 1 and "XFAIL" in done.stdout and "unexpected" in done.stdout
+
+
+def test_no_xfail_is_expected_after_the_f1_f2_fix():
+    assert cc.EXPECTED_XFAILS == frozenset()
 
 
 # ---- the summary ----

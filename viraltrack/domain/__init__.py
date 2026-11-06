@@ -20,6 +20,7 @@ from viraltrack.domain.models import (
     ContentType,
     Creator,
     DataOrigin,
+    FunnelStage,
     Metric,
     MetricKind,
     Platform,
@@ -32,7 +33,7 @@ __all__ = [
     "UnsupportedCapability", "ViralTrackError",
     "IngestionDisabled", "ProviderAuthFailed", "ProviderCredentialsMissing", "QuotaExhausted",
     "RateLimited",
-    "Content", "ContentPage", "ContentType", "Creator", "DataOrigin", "Metric", "MetricKind",
+    "Content", "ContentPage", "ContentType", "FunnelStage", "Creator", "DataOrigin", "Metric", "MetricKind",
     "Exposure", "MetricPolicy", "MetricRule", "RestrictedMetric",
     "Platform", "Provenance",
 ]

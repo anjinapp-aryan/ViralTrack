@@ -32,7 +32,7 @@ depend on the time of day.
 | Test | Result | Meaning |
 |---|---|---|
 | `test_omitted_thresholds_become_restrictive_defaults_and_the_response_says_so` | passes | VERIFIED: omitted `max_subscribers` and `min_views` become 10,000 and 10,000, and the response echoes them in `filters` |
-| `test_batch_5_replay_old_adapter_query_returns_zero_with_the_recorded_funnel` | passes | VERIFIED: the exact query ViralTrack sends for `period=30d`, replayed on a Batch 5-shaped corpus, gives the funnel `videos in window 3 -> channel subs <= 10,000 0 -> video views >= 10,000 0` and 0 results. Adding an explicit subscriber bound and `min_views=0` returns the 3 candidates |
+| `test_batch_5_replay_the_adapter_query_keeps_candidates_and_the_old_query_loses_them` (was `..._old_adapter_query_returns_zero_...`; rewritten after the F-1/F-2 fix, which makes the adapter send both thresholds; the old query is kept as evidence) | passes | VERIFIED: the exact query ViralTrack sends for `period=30d`, replayed on a Batch 5-shaped corpus, gives the funnel `videos in window 3 -> channel subs <= 10,000 0 -> video views >= 10,000 0` and 0 results. Adding an explicit subscriber bound and `min_views=0` returns the 3 candidates |
 | `test_an_unset_subscriber_filter_must_not_fall_back_to_the_foundation_default` | **xfail (strict)** | The defect, stated as the required behaviour. Fails today |
 | `test_an_unset_minimum_views_filter_must_not_fall_back_to_the_foundation_default` | **xfail (strict)** | Same |
 | `test_the_batch_5_query_sends_every_threshold_explicitly` | **xfail (strict)** | Same, for the Batch 5 query |
@@ -59,7 +59,7 @@ Value sent as `max_subscribers` on `/api/viral` (13-video corpus):
 | `0` | 2 videos: only channels with 0 or **hidden** subscribers | **does not disable**; the audit's mistake, now guarded |
 | `-1` | only hidden-subscriber channels | filter active |
 | empty, `null`, `None`, `none`, `unlimited`, `1.5` | HTTP 422 | no null spelling exists over HTTP |
-| `2147483647`, `1000000000000` | all 13 videos | passes everything |
+| `2147483647`, `1000000000000` | all 13 videos | passes everything upstream; **not** a ViralTrack setting: the approved maximum is 1,000,000, a bounded limit (D3-07B) |
 
 For `min_views`: omitted gives 10,000; `0` disables (the code tests truthiness); a negative value is applied but passes all.
 `preset=niche_all` is the upstream's own unbounded form but requires a `niche`.

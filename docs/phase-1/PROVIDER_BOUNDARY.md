@@ -36,7 +36,7 @@ only what it really supports. An unsupported call never returns an empty list (a
 | get_creator | yes | `GET /api/channels/{id}` | Collected channels only (404 → `NotFound`) |
 | creator_history | yes | `GET /api/channels/{id}/history` | Limited by retention (30 days by default) |
 | global_trending | **no** | — | `chart=mostPopular` covers only Music, Movies and Gaming since 2025-07-21 |
-| short_form | yes (filter) | `only_shorts` | Duration ≤ 180 s filter. The `short` label is RESTRICTED (DERIVED_METRIC_POLICY.md) |
+| short_form | yes (filter) | none: `only_shorts` / `exclude_shorts` are always sent `false` (F-6) | A duration filter applied by ViralTrack on `lengthSeconds`: more than 0 and at most 180 s inclusive; zero, missing or invalid duration is not short; the foundation's `is_short` is ignored. The `short` label is RESTRICTED (DERIVED_METRIC_POLICY.md) |
 | engagement_metrics | yes | likes, comments | |
 | hashtags | **no** | — | Not in upstream read API |
 | audio | **no** | — | No YouTube API |

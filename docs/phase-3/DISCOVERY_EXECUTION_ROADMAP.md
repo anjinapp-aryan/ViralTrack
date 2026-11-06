@@ -22,8 +22,8 @@ Deliverables: the six documents in `docs/phase-3/`. Open owner decisions are lis
 [D1_OFFLINE_DISCOVERY_TEST_REPORT.md](D1_OFFLINE_DISCOVERY_TEST_REPORT.md). Delivered: adapter-parameter,
 upstream-semantics, funnel, failure-case and restricted-metric tests; a synthetic corpus; an offline runner for the
 real upstream API; the corrected Phase 2 discovery test plan. **Production code was not changed.** Nine verified
-defects and gaps are recorded as strict `xfail` tests that D2 and D3 must turn green (list in the report).
-D2 and D3 have not started.
+defects and gaps were recorded as strict `xfail` tests that D2 and D3 must turn green (list in the report).
+Update: D3 and the F-1/F-2 fix turned all nine green (see the D3 section); none remains.
 
 | | |
 |---|---|
@@ -42,8 +42,8 @@ D2 and D3 have not started.
 
 **Status (2026-11-05): implemented as the keyword-collection `period` only, awaiting owner review. Not committed.**
 Report: [D2_IMPLEMENTATION_REPORT.md](D2_IMPLEMENTATION_REPORT.md). The dedicated CI job for the upstream-backed
-offline tests is implemented but its first run is pending: [D2_CI_IMPLEMENTATION_REPORT.md](D2_CI_IMPLEMENTATION_REPORT.md).
-D3 has not started.
+offline tests is implemented and has run green on GitHub: [D2_CI_IMPLEMENTATION_REPORT.md](D2_CI_IMPLEMENTATION_REPORT.md),
+[CI_HARDENING_REPORT.md](CI_HARDENING_REPORT.md).
 
 | | |
 |---|---|
@@ -58,6 +58,18 @@ D3 has not started.
 | Approval | Owner approves the `collect_query` signature change |
 
 ## D3: configurable eligibility filters
+
+**Status (2026-11-06): the seven discovery defect fixes and the F-1/F-2 threshold fix are implemented, awaiting owner review.
+Not committed.** Report: [D3_DISCOVERY_DEFECT_FIX_REPORT.md](D3_DISCOVERY_DEFECT_FIX_REPORT.md). Done: funnel surfaced
+(`ContentPage.funnel`), malformed entries refuse the whole page (owner decision), duplicate ids collapsed, boolean totals
+rejected, both 24-hour velocity values and sorts removed while snapshot recency is unknown (owner decision), no lifetime
+velocity without a publication date, one sort allowlist, the 1,000,000 subscriber bound enforced and documented, and
+unset thresholds sent explicitly (`max_subscribers=1000000`, `min_views=0`; owner decision: **bounded, never unlimited**).
+No strict xfail remains. Owner decision: the lifetime-velocity sort is removed (upstream ranks an undated video first), so the approved sorts
+are `views` and `published_at` only (the engagement-rate sort was removed too: the foundation orders hidden likes as zero). F-6 is implemented: `short_form` is a duration filter (<= 180 s inclusive; zero, missing or
+invalid duration is not short) applied by ViralTrack, not YouTube's Shorts classification ([F6_SHORT_FORM_INVESTIGATION.md](F6_SHORT_FORM_INVESTIGATION.md)).
+Period, limit and region are validated before any request. **D3 is complete for the approved offline scope**; see
+[PHASE_3_FINAL_COMPLETION_REPORT.md](PHASE_3_FINAL_COMPLETION_REPORT.md). D4 to D8 are not started (section "Remaining stages" of that report).
 
 | | |
 |---|---|
