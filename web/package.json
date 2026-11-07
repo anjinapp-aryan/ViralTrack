@@ -82,5 +82,6 @@
     "vitest": "^4.1.12",
     "vitest-browser-react": "^2.3.0"
   },
-  "description": "ViralTrack local-development web UI, adapted from satnaing/shadcn-admin@e16c87f (MIT)"
+  "description": "ViralTrack local-development web UI, adapted from satnaing/shadcn-admin@e16c87f (MIT)",
+  "packageManager": "pnpm@10.20.0"
 }

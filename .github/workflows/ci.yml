@@ -71,6 +71,63 @@ jobs:
           VT_TEST_REQUIRE_PGVECTOR: "1"
         run: pytest -q -p no:cacheprovider
 
+  # The local-development web UI (web/). It needs no database, no foundation and no network service: the
+  # tests answer every API call with synthetic responses, and nothing here can reach YouTube.
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # pnpm is the version pinned in web/package.json ("packageManager"), provided by Corepack.
+      - name: Enable the pinned pnpm
+        run: corepack enable
+
+      - name: Install (lockfile only; the lockfile must be current)
+        run: pnpm install --frozen-lockfile
+
+      # src/lib/api/schema.d.ts is generated from docs/api/openapi-v1.json; a stale copy fails here.
+      - name: Check the API types match the OpenAPI contract
+        run: |
+          pnpm run api:types
+          git diff --exit-code -- src/lib/api/schema.d.ts
+
+      - name: Type check
+        run: pnpm exec tsc -b
+
+      - name: Lint
+        run: pnpm exec eslint .
+
+      - name: Format check
+        run: pnpm exec prettier --check .
+
+      - name: Production build
+        run: pnpm run build
+
+      - name: Install the test browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Tests (Vitest in Chromium, with accessibility checks)
+        run: pnpm test
+
+      # Production dependencies must have no known advisory. The whole tree must have none of high or
+      # critical severity; lower ones in development tooling are listed but do not fail the job.
+      - name: Dependency audit
+        run: |
+          pnpm audit --prod
+          pnpm audit --audit-level high
+          pnpm audit || true
+
   # The adopted foundation's own suite, as its CI runs it (pgvector Postgres).
   # Slow (~1,800 tests), so only weekly and on demand.
   upstream-suite:

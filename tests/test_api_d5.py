@@ -912,9 +912,12 @@ def test_the_foundation_token_never_appears_in_responses_or_logs(caplog):
 def real_foundation(pg_schema):
     """A provider whose every request is answered by the REAL pinned foundation code over a seeded schema."""
     from tests.support import synthetic_corpus as corpus
-    from tests.support.upstream import run_upstream
+    from tests.support.upstream import run_upstream, upstream_python
 
-    conn, schema = pg_schema
+    upstream_python()  # skips (or fails when VT_TEST_REQUIRE_UPSTREAM=1) before anything else, like the other
+    conn, schema = (
+        pg_schema  # foundation-backed tests; hosted `viraltrack` has a database but no foundation Python
+    )
     corpus.seed(conn, schema)
     attempts = []
 
