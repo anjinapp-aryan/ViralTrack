@@ -1,0 +1,1810 @@
+{
+  "components": {
+    "schemas": {
+      "CapabilitiesOut": {
+        "additionalProperties": false,
+        "properties": {
+          "api_version": {
+            "const": "v1",
+            "title": "Api Version",
+            "type": "string"
+          },
+          "filters": {
+            "items": {
+              "$ref": "#/components/schemas/FilterOut"
+            },
+            "title": "Filters",
+            "type": "array"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricOut"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "page_size_max": {
+            "title": "Page Size Max",
+            "type": "integer"
+          },
+          "platforms": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformOut"
+            },
+            "title": "Platforms",
+            "type": "array"
+          },
+          "result_window_max": {
+            "title": "Result Window Max",
+            "type": "integer"
+          },
+          "sorts": {
+            "items": {
+              "$ref": "#/components/schemas/SortOut"
+            },
+            "title": "Sorts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "api_version",
+          "platforms",
+          "filters",
+          "sorts",
+          "metrics",
+          "page_size_max",
+          "result_window_max"
+        ],
+        "title": "CapabilitiesOut",
+        "type": "object"
+      },
+      "CapabilityOut": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "supported": {
+            "title": "Supported",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "supported",
+          "description"
+        ],
+        "title": "CapabilityOut",
+        "type": "object"
+      },
+      "CheckOut": {
+        "additionalProperties": false,
+        "properties": {
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "unavailable",
+              "not_configured"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "required"
+        ],
+        "title": "CheckOut",
+        "type": "object"
+      },
+      "CreatorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "creator": {
+            "$ref": "#/components/schemas/CreatorRef"
+          },
+          "demo": {
+            "title": "Demo",
+            "type": "boolean"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "origin": {
+            "enum": [
+              "real_provider_data",
+              "demo",
+              "test"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "videos": {
+            "description": "not available: the provider has no per-creator video list",
+            "title": "Videos",
+            "type": "null"
+          }
+        },
+        "required": [
+          "creator",
+          "origin",
+          "demo",
+          "notes"
+        ],
+        "title": "CreatorDetail",
+        "type": "object"
+      },
+      "CreatorRef": {
+        "additionalProperties": false,
+        "properties": {
+          "content_count": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MetricValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "followers": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MetricValue"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null when hidden or not reported"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "platform": {
+            "enum": [
+              "youtube",
+              "instagram",
+              "tiktok"
+            ],
+            "title": "Platform",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "id",
+          "platform",
+          "name",
+          "handle",
+          "url",
+          "followers",
+          "content_count"
+        ],
+        "title": "CreatorRef",
+        "type": "object"
+      },
+      "CreatorSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "creator": {
+            "$ref": "#/components/schemas/CreatorRef"
+          },
+          "videos_in_result": {
+            "description": "videos of this creator among the discovered videos considered",
+            "title": "Videos In Result",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "creator",
+          "videos_in_result"
+        ],
+        "title": "CreatorSummary",
+        "type": "object"
+      },
+      "ErrorBody": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "details": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "title": "Details",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody",
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "ErrorOut": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorOut",
+        "type": "object"
+      },
+      "FilterOut": {
+        "additionalProperties": false,
+        "properties": {
+          "applies_to": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Applies To",
+            "type": "array"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "maximum": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum"
+          },
+          "minimum": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Values"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "description",
+          "applies_to"
+        ],
+        "title": "FilterOut",
+        "type": "object"
+      },
+      "HealthOut": {
+        "additionalProperties": false,
+        "properties": {
+          "checks": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/CheckOut"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checks"
+          },
+          "service": {
+            "const": "viraltrack-api",
+            "title": "Service",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "ready",
+              "not_ready"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "version"
+        ],
+        "title": "HealthOut",
+        "type": "object"
+      },
+      "Item_CreatorDetail_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CreatorDetail"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "Item[CreatorDetail]",
+        "type": "object"
+      },
+      "MetricOut": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "raw",
+              "derived"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sortable": {
+            "title": "Sortable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "sortable",
+          "description"
+        ],
+        "title": "MetricOut",
+        "type": "object"
+      },
+      "MetricValue": {
+        "additionalProperties": false,
+        "description": "One number from outside ViralTrack, with where it came from.",
+        "properties": {
+          "collected_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "when the value was read from the platform; null when the provider does not report it",
+            "title": "Collected At"
+          },
+          "foundation_first_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "when the foundation first stored the item; not the read time of this value",
+            "title": "Foundation First Seen At"
+          },
+          "kind": {
+            "description": "raw: returned by the platform; derived: calculated",
+            "enum": [
+              "raw",
+              "derived"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "formula or caveat; set for derived values",
+            "title": "Note"
+          },
+          "origin": {
+            "description": "real provider data, or synthetic demo or test data",
+            "enum": [
+              "real_provider_data",
+              "demo",
+              "test"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "source": {
+            "description": "who produced the value, e.g. youtube-data-api",
+            "title": "Source",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value",
+          "kind",
+          "source",
+          "provider",
+          "origin",
+          "collected_at",
+          "foundation_first_seen_at",
+          "note"
+        ],
+        "title": "MetricValue",
+        "type": "object"
+      },
+      "PageMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "data_origin": {
+            "description": "what the provider's corpus contains",
+            "enum": [
+              "real_provider_data",
+              "demo",
+              "test"
+            ],
+            "title": "Data Origin",
+            "type": "string"
+          },
+          "demo": {
+            "description": "true when the data is synthetic and must be labelled DEMO",
+            "title": "Demo",
+            "type": "boolean"
+          },
+          "has_more": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null when it cannot be known (the 1000-item window is full)",
+            "title": "Has More"
+          },
+          "notes": {
+            "description": "caveats the provider attached, e.g. dropped duplicates",
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "platform": {
+            "enum": [
+              "youtube",
+              "instagram",
+              "tiktok"
+            ],
+            "title": "Platform",
+            "type": "string"
+          },
+          "returned": {
+            "title": "Returned",
+            "type": "integer"
+          },
+          "sort": {
+            "anyOf": [
+              {
+                "enum": [
+                  "views",
+                  "published_at"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "items matching the filters as the provider reports; null if unknown",
+            "title": "Total"
+          }
+        },
+        "required": [
+          "platform",
+          "sort",
+          "page",
+          "page_size",
+          "returned",
+          "has_more",
+          "total",
+          "data_origin",
+          "demo",
+          "notes"
+        ],
+        "title": "PageMeta",
+        "type": "object"
+      },
+      "Page_CreatorSummary_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CreatorSummary"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Page[CreatorSummary]",
+        "type": "object"
+      },
+      "Page_Video_": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Video"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Page[Video]",
+        "type": "object"
+      },
+      "PlatformOut": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityOut"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "data_origin": {
+            "anyOf": [
+              {
+                "enum": [
+                  "real_provider_data",
+                  "demo",
+                  "test"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Origin"
+          },
+          "platform": {
+            "enum": [
+              "youtube",
+              "instagram",
+              "tiktok"
+            ],
+            "title": "Platform",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "platform",
+          "available",
+          "reason",
+          "data_origin",
+          "capabilities"
+        ],
+        "title": "PlatformOut",
+        "type": "object"
+      },
+      "SortOut": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "name",
+          "available"
+        ],
+        "title": "SortOut",
+        "type": "object"
+      },
+      "Video": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "content_type": {
+            "enum": [
+              "video",
+              "short",
+              "unknown"
+            ],
+            "title": "Content Type",
+            "type": "string"
+          },
+          "creator": {
+            "$ref": "#/components/schemas/CreatorRef"
+          },
+          "derived": {
+            "$ref": "#/components/schemas/VideoDerived"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/VideoMetrics"
+          },
+          "origin": {
+            "enum": [
+              "real_provider_data",
+              "demo",
+              "test"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "platform": {
+            "enum": [
+              "youtube",
+              "instagram",
+              "tiktok"
+            ],
+            "title": "Platform",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "retrieved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "when ViralTrack read the item from its provider",
+            "title": "Retrieved At"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the platform's own image URL; ViralTrack stores no image",
+            "title": "Thumbnail Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "platform",
+          "url",
+          "title",
+          "thumbnail_url",
+          "published_at",
+          "duration_seconds",
+          "content_type",
+          "category",
+          "language",
+          "region",
+          "creator",
+          "metrics",
+          "derived",
+          "origin",
+          "retrieved_at"
+        ],
+        "title": "Video",
+        "type": "object"
+      },
+      "VideoDerived": {
+        "additionalProperties": false,
+        "properties": {
+          "engagement_rate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MetricValue"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "(likes + comments) / views x 100; null when likes are hidden. Display only: not a sort"
+          },
+          "views_per_hour_lifetime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MetricValue"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "views / hours since publication; null without a valid publication date. Display only"
+          }
+        },
+        "required": [
+          "engagement_rate",
+          "views_per_hour_lifetime"
+        ],
+        "title": "VideoDerived",
+        "type": "object"
+      },
+      "VideoMetrics": {
+        "additionalProperties": false,
+        "properties": {
+          "comments": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MetricValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "likes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MetricValue"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null when the creator hides likes or none was reported"
+          },
+          "views": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MetricValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "views",
+          "likes",
+          "comments"
+        ],
+        "title": "VideoMetrics",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Platform-neutral discovery over provider data. Only metrics the ViralTrack metric policy allows are part of this contract; unknown values are null.",
+    "title": "ViralTrack API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/capabilities": {
+      "get": {
+        "operationId": "capabilities_api_v1_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilitiesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Platforms, filters, sorts and metrics this deployment supports.",
+        "tags": [
+          "capabilities"
+        ]
+      }
+    },
+    "/api/v1/creators": {
+      "get": {
+        "operationId": "creators_api_v1_creators_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": "30d",
+              "pattern": "^(all|[1-9][0-9]{0,3}[hd])$",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "niche",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Niche"
+            }
+          },
+          {
+            "in": "query",
+            "name": "creator_size",
+            "required": false,
+            "schema": {
+              "default": "any",
+              "enum": [
+                "any",
+                "up_to_10k",
+                "up_to_100k",
+                "up_to_1m"
+              ],
+              "title": "Creator Size",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "region",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Z]{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "youtube",
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "title": "Platform",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CreatorSummary_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Invalid or unsupported request"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider answered with something unusable"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider timed out"
+          }
+        },
+        "summary": "Creators of the discovered videos (the first 1000 videos by views for these filters).",
+        "tags": [
+          "creators"
+        ]
+      }
+    },
+    "/api/v1/creators/{creator_id}": {
+      "get": {
+        "operationId": "creator_detail_api_v1_creators__creator_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "creator_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "title": "Creator Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "youtube",
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "title": "Platform",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item_CreatorDetail_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unknown creator"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Invalid or unsupported request"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider answered with something unusable"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider timed out"
+          }
+        },
+        "summary": "One creator already collected.",
+        "tags": [
+          "creators"
+        ]
+      }
+    },
+    "/api/v1/discover": {
+      "get": {
+        "operationId": "discover_api_v1_discover_get",
+        "parameters": [
+          {
+            "description": "optional topic text; uses text search (creator_size, min_views and region are then not supported)",
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "optional topic text; uses text search (creator_size, min_views and region are then not supported)",
+              "title": "Query"
+            }
+          },
+          {
+            "description": "all, or 1-9999 hours (h) or days (d)",
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": "7d",
+              "description": "all, or 1-9999 hours (h) or days (d)",
+              "pattern": "^(all|[1-9][0-9]{0,3}[hd])$",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "niche",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Niche"
+            }
+          },
+          {
+            "description": "maximum follower count; any = up to 1,000,000",
+            "in": "query",
+            "name": "creator_size",
+            "required": false,
+            "schema": {
+              "default": "any",
+              "description": "maximum follower count; any = up to 1,000,000",
+              "enum": [
+                "any",
+                "up_to_10k",
+                "up_to_100k",
+                "up_to_1m"
+              ],
+              "title": "Creator Size",
+              "type": "string"
+            }
+          },
+          {
+            "description": "up_to_3_min: known length of at most 180 s",
+            "in": "query",
+            "name": "duration",
+            "required": false,
+            "schema": {
+              "default": "any",
+              "description": "up_to_3_min: known length of at most 180 s",
+              "enum": [
+                "any",
+                "up_to_3_min",
+                "over_3_min"
+              ],
+              "title": "Duration",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "region",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Z]{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_views",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 1000000000000,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Views"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "views",
+              "enum": [
+                "views",
+                "published_at"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "youtube",
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "title": "Platform",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_Video_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Invalid or unsupported request"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider answered with something unusable"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider timed out"
+          }
+        },
+        "summary": "Discover videos in the collected corpus, ordered by an approved raw sort.",
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Liveness: the API process answers. Checks no dependency.",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/health/ready": {
+      "get": {
+        "operationId": "ready_api_v1_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            },
+            "description": "A required dependency is down"
+          }
+        },
+        "summary": "Readiness: the providers' backends and, if configured, the database answer.",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "operationId": "search_api_v1_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "pattern": "^(all|[1-9][0-9]{0,3}[hd])$",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "niche",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Niche"
+            }
+          },
+          {
+            "in": "query",
+            "name": "duration",
+            "required": false,
+            "schema": {
+              "default": "any",
+              "enum": [
+                "any",
+                "up_to_3_min",
+                "over_3_min"
+              ],
+              "title": "Duration",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "views",
+              "enum": [
+                "views",
+                "published_at"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "youtube",
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "title": "Platform",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_Video_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Invalid or unsupported request"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider answered with something unusable"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider timed out"
+          }
+        },
+        "summary": "Search videos in the collected corpus by topic text.",
+        "tags": [
+          "content"
+        ]
+      }
+    }
+  }
+}

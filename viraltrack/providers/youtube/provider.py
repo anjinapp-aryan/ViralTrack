@@ -269,6 +269,10 @@ class YouTubeProvider(PlatformProvider):
         }
         return self._page(self._client.get("/api/search", params), query.short_form, wanted)
 
+    def check_ready(self) -> bool:
+        """The foundation's GET /api/health (free, read-only, no quota) answered with ok=true."""
+        return self._client.get("/api/health").get("ok") is True
+
     def get_creator(self, creator_id: str) -> Creator:
         return mapping.map_channel(self._client.get(f"/api/channels/{_path_id(creator_id)}"), self._ctx())
 

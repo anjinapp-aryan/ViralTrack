@@ -50,3 +50,19 @@ A further 3 tests are POSIX-only and skip on Windows. The skip count depends on 
 checkout it is 137. A skipped test has not been run, so a green local result without the variables above does not
 cover them. The hosted CI sets the database and upstream variables and fails if the expected tests are skipped.
 See [docs/phase-1/LOCAL_SETUP.md](docs/phase-1/LOCAL_SETUP.md) and [docs/phase-1/TEST_RESULTS.md](docs/phase-1/TEST_RESULTS.md).
+
+## HTTP API (D5)
+
+A read-only, versioned API over the provider layer. It spends no YouTube quota, writes nothing, exposes no
+foundation route and serves only metrics the ViralTrack metric policy allows.
+
+```powershell
+python -m pip install -e ".[api]"          # FastAPI + uvicorn (already in ".[dev]")
+$env:VT_YOUTUBE_FOUNDATION_URL = "http://127.0.0.1:8080"
+$env:VT_YOUTUBE_DATA_ORIGIN = "demo"        # label synthetic data as DEMO; "real" for real collections
+python -m viraltrack.api                    # http://127.0.0.1:8000, docs at /docs, contract at /openapi.json
+```
+
+Endpoints: `/api/v1/health`, `/api/v1/health/ready`, `/api/v1/capabilities`, `/api/v1/discover`,
+`/api/v1/search`, `/api/v1/creators`, `/api/v1/creators/{creator_id}`. Details and limits:
+[docs/phase-4-7/D5_API_COMPLETION_REPORT.md](docs/phase-4-7/D5_API_COMPLETION_REPORT.md).

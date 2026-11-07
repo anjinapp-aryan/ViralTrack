@@ -131,5 +131,10 @@ class PlatformProvider(ABC):
     def ingestion_status(self) -> QuotaStatus:
         self._unsupported(Capability.INGESTION_STATUS)
 
+    def check_ready(self) -> bool | None:
+        """Whether the provider's backend answers a free, read-only health request (readiness probes).
+        None: this provider has no such check. Never spends quota."""
+        return None
+
     def close(self) -> None:
         pass

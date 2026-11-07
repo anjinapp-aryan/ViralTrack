@@ -14,9 +14,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# The D5 HTTP API (viraltrack.api). Same framework and versions as the adopted foundation's backend.
+api = [
+    "fastapi>=0.158.1",
+    "uvicorn>=0.54.0",
+]
 dev = [
     "pytest>=8",
     "ruff==0.16.9",  # same pin as the foundation's CI
+    "fastapi>=0.158.1",
+    "uvicorn>=0.54.0",
 ]
 
 [tool.setuptools.packages.find]
