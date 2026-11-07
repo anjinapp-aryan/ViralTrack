@@ -67,6 +67,17 @@ CREATOR_SIZE = {
 }
 DURATION = {"any": None, "up_to_3_min": True, "over_3_min": False}
 APPROVED_SORTS = ("views", "published_at")
+# Topic search is ordered by the data source's text relevance. The similarity value itself stays internal:
+# it is never returned, filtered on or described as popularity or performance.
+RELEVANCE_DESCRIPTION = (
+    "Topic search only: the data source ranks the collected videos by how closely they match the search "
+    "text. It does not exclude unrelated videos, and relevance says nothing about popularity or performance."
+)
+TOPIC_SEARCH_NOTE = (
+    "Topic search ranks the collected videos by how closely they match the search text, as the data source "
+    "computes it. It does not exclude unrelated videos, and relevance is not a measure of popularity or "
+    "performance."
+)
 NOT_AVAILABLE_SORTS = {
     "engagement_rate": "the foundation orders hidden like counts as zero",
     "views_per_hour_lifetime": "the foundation ranks undated videos by a fabricated rate",
@@ -220,6 +231,11 @@ def create_app(
             )
         return window, min(window + 1, RESULT_WINDOW)
 
+    def topic_page(result, page_no, page_size, window, fetched):
+        page = video_page(result, page_no, page_size, window, fetched, "relevance")
+        page.meta.notes = [TOPIC_SEARCH_NOTE, *page.meta.notes]
+        return page
+
     def video_page(result, page_no, page_size, window, fetched, sort):
         items = list(result.items)
         data = [serialize.video(c) for c in items[(page_no - 1) * page_size : window]]
@@ -310,8 +326,19 @@ def create_app(
             filters=_filters(),
             page_size_max=PAGE_SIZE_MAX,
             result_window_max=RESULT_WINDOW,
-            sorts=[schemas.SortOut(name=s, available=True) for s in APPROVED_SORTS]
-            + [schemas.SortOut(name=s, available=False, reason=r) for s, r in NOT_AVAILABLE_SORTS.items()],
+            sorts=[schemas.SortOut(name=s, available=True, applies_to="browse") for s in APPROVED_SORTS]
+            + [
+                schemas.SortOut(
+                    name="relevance",
+                    available=True,
+                    applies_to="topic_search",
+                    description=RELEVANCE_DESCRIPTION,
+                )
+            ]
+            + [
+                schemas.SortOut(name=s, available=False, applies_to="browse", reason=r)
+                for s, r in NOT_AVAILABLE_SORTS.items()
+            ],
             metrics=_metrics(),
         )
 
@@ -338,7 +365,11 @@ def create_app(
         duration: Duration = Query("any", description="up_to_3_min: known length of at most 180 s"),
         region: str | None = Query(None, pattern=r"^[A-Z]{2}$"),
         min_views: int | None = Query(None, ge=0, le=10**12),
-        sort: Sort = Query("views"),
+        sort: Sort | None = Query(
+            None,
+            description="views (default) or published_at when browsing; not accepted with query, which is "
+            "ordered by relevance",
+        ),
         platform: schemas.PlatformName = Query("youtube"),
         page: int = Query(1, ge=1, le=RESULT_WINDOW),
         page_size: int = Query(24, ge=1, le=PAGE_SIZE_MAX),
@@ -346,6 +377,13 @@ def create_app(
         provider = provider_for(platform)
         window, fetched = window_of(page, page_size)
         if query is not None:
+            if sort is not None:
+                raise ApiError(
+                    422,
+                    "sort_not_supported_with_query",
+                    "topic search is ordered by relevance; the sort parameter does not apply",
+                    [schemas.ErrorDetail(field="sort", message="not supported with query")],
+                )
             unsupported = [
                 n
                 for n, v in (
@@ -364,14 +402,10 @@ def create_app(
                 )
             result = provider.search_content(
                 SearchQuery(
-                    text=query,
-                    period=period,
-                    limit=fetched,
-                    short_form=DURATION[duration],
-                    niche=niche,
-                    sort=sort,
+                    text=query, period=period, limit=fetched, short_form=DURATION[duration], niche=niche
                 )
             )
+            return topic_page(result, page, page_size, window, fetched)
         else:
             result = provider.discover_content(
                 DiscoveryQuery(
@@ -382,28 +416,36 @@ def create_app(
                     niche=niche,
                     max_creator_followers=CREATOR_SIZE[creator_size],
                     min_views=min_views,
-                    sort=sort,
+                    sort=sort or "views",
                 )
             )
-        return video_page(result, page, page_size, window, fetched, sort)
+        return video_page(result, page, page_size, window, fetched, sort or "views")
 
     @app.get(
         "/api/v1/search",
         response_model=schemas.Page[schemas.Video],
         tags=["content"],
         responses=ERRORS,
-        summary="Search videos in the collected corpus by topic text.",
+        summary="Topic search: the collected videos ranked by relevance to the text (not filtered).",
     )
     def search(
+        request: Request,
         query: str = Query(..., min_length=1, max_length=200),
         period: str = Query("all", pattern=PERIOD_PATTERN),
         niche: str | None = Query(None, min_length=1, max_length=100),
         duration: Duration = Query("any"),
-        sort: Sort = Query("views"),
         platform: schemas.PlatformName = Query("youtube"),
         page: int = Query(1, ge=1, le=RESULT_WINDOW),
         page_size: int = Query(24, ge=1, le=PAGE_SIZE_MAX),
     ):
+        if "sort" in request.query_params:
+            # not silently ignored: topic search has exactly one order
+            raise ApiError(
+                422,
+                "sort_not_supported_with_query",
+                "topic search is ordered by relevance; the sort parameter does not apply",
+                [schemas.ErrorDetail(field="sort", message="not supported with query")],
+            )
         provider = provider_for(platform)
         window, fetched = window_of(page, page_size)
         result = provider.search_content(
@@ -413,10 +455,9 @@ def create_app(
                 limit=fetched,
                 short_form=DURATION[duration],
                 niche=niche,
-                sort=sort,
             )
         )
-        return video_page(result, page, page_size, window, fetched, sort)
+        return topic_page(result, page, page_size, window, fetched)
 
     # ---- creators ----
 

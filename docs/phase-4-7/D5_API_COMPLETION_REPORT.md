@@ -134,3 +134,12 @@ Dependencies added (an optional extra, not core): fastapi (MIT) and uvicorn (BSD
 | No frontend migration | yes |
 | No unapproved dependency | fastapi and uvicorn as an optional extra (D5-authorized, audited) |
 | No user work lost | yes |
+
+## 13. Addendum: search contract correction (after frontend phase 1)
+
+Topic search (`/api/v1/search`, `/api/v1/discover?query=`) now reports `meta.sort: "relevance"`. It always carries a note that it ranks the collected videos by relevance to the text, does not exclude unrelated videos and is not a measure of popularity or performance. When no returned video has topic data (as in the demo corpus), it also says the order is not by relevance.
+
+A `sort` with a query is refused (422 `sort_not_supported_with_query`), and `/search` no longer accepts `sort`. Browse sorts are unchanged. The similarity value stays INTERNAL_ONLY and is never returned.
+
+Details: `FRONTEND_PHASE_1_REPORT.md` section 6. Tests: `tests/test_api_d5.py`, 148 passed offline. Full suite with PostgreSQL and the foundation: 1094 passed, 5 skipped.
+

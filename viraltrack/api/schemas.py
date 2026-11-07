@@ -86,7 +86,11 @@ class Video(_Strict):
 
 class PageMeta(_Strict):
     platform: PlatformName
-    sort: Literal["views", "published_at"] | None
+    sort: Literal["views", "published_at", "relevance"] | None = Field(
+        description="the order actually applied: views or published_at when browsing; relevance for topic "
+        "search (the data source ranks the collected videos by how closely they match the text); null when "
+        "no single order applies"
+    )
     page: int
     page_size: int
     returned: int
@@ -143,7 +147,12 @@ class FilterOut(_Strict):
 class SortOut(_Strict):
     name: str
     available: bool
+    applies_to: Literal["browse", "topic_search"] = Field(
+        description="browse: chosen with the sort parameter; topic_search: applied automatically to text "
+        "search"
+    )
     reason: str | None = None
+    description: str | None = None
 
 
 class MetricOut(_Strict):

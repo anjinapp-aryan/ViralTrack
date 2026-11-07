@@ -205,7 +205,12 @@ def test_capabilities_show_youtube_active_and_instagram_tiktok_unavailable():
 
 def test_capabilities_list_only_the_approved_sorts_as_available():
     sorts = client().get("/api/v1/capabilities").json()["sorts"]
-    assert [s["name"] for s in sorts if s["available"]] == ["views", "published_at"]
+    browse = [s["name"] for s in sorts if s["available"] and s["applies_to"] == "browse"]
+    assert browse == ["views", "published_at"]
+    topic = [s for s in sorts if s["applies_to"] == "topic_search"]
+    assert [s["name"] for s in topic] == ["relevance"] and topic[0]["available"] is True
+    assert "does not exclude unrelated videos" in topic[0]["description"]
+    assert "says nothing about popularity or performance" in topic[0]["description"]
     refused = {s["name"] for s in sorts if not s["available"]}
     assert refused == {"engagement_rate", "views_per_hour_lifetime", "views_per_hour_24h", "views_gained_24h"}
     assert all(s["reason"] for s in sorts if not s["available"])
@@ -340,7 +345,11 @@ def test_invalid_requests_are_422_before_any_foundation_request(url):
     nf = Foundation()
     r = client(nf).get(url)
     assert r.status_code == 422, r.text
-    assert r.json()["error"]["code"] in {"invalid_request", "invalid_parameter"}
+    assert r.json()["error"]["code"] in {
+        "invalid_request",
+        "invalid_parameter",
+        "sort_not_supported_with_query",
+    }
     assert [q for q in nf.requests if q.url.path != "/api/health"] == []
 
 
@@ -669,6 +678,78 @@ def test_partial_data_keeps_the_valid_fields_and_nulls_the_rest():
     assert v["title"] is None and v["thumbnail_url"] is None and v["metrics"]["views"]["value"] > 0
 
 
+# ---- topic search contract: relevance -------------------------------------------------------------------
+
+
+def with_scores(scores):
+    body = load_fixture("search.json")
+    for item, score in zip(body["results"], scores):
+        item["semanticScore"] = score
+    return Foundation(routes={"/api/search": body})
+
+
+@pytest.mark.parametrize("url", ["/api/v1/search?query=history", "/api/v1/discover?query=history&period=all"])
+def test_topic_search_is_labelled_relevance_and_explained(url):
+    body = client(with_scores([0.91, 0.42, 0.13])).get(url).json()
+    assert body["meta"]["sort"] == "relevance"
+    assert body["meta"]["notes"][0].startswith("Topic search ranks the collected videos")
+    assert "does not exclude unrelated videos" in body["meta"]["notes"][0]
+    assert "not a measure of popularity or performance" in body["meta"]["notes"][0]
+    assert not any("no topic data" in n for n in body["meta"]["notes"])
+
+
+def test_the_similarity_value_is_never_returned():
+    r = client(with_scores([0.91, 0.42, 0.13])).get("/api/v1/search?query=history")
+    assert r.status_code == 200
+    assert "0.91" not in r.text and "0.42" not in r.text
+    assert not {"semanticScore", "semantic_score", "relevance_score", "score"} & keys(r.json())
+
+
+def test_without_topic_data_the_order_is_said_not_to_be_relevance():
+    body = client(with_scores([None, None, None])).get("/api/v1/search?query=history").json()
+    assert body["meta"]["sort"] == "relevance"
+    assert any("no topic data for these videos" in n for n in body["meta"]["notes"])
+
+
+def test_partial_topic_data_does_not_trigger_the_no_topic_data_note():
+    body = client(with_scores([None, 0.5, None])).get("/api/v1/search?query=history").json()
+    assert not any("no topic data" in n for n in body["meta"]["notes"])
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "/api/v1/discover?query=history&sort=views",
+        "/api/v1/discover?query=history&sort=published_at",
+        "/api/v1/search?query=history&sort=views",
+        "/api/v1/search?query=history&sort=relevance",
+    ],
+)
+def test_a_sort_with_topic_search_is_refused_not_ignored(url):
+    nf = Foundation()
+    r = client(nf).get(url)
+    assert r.status_code == 422 and r.json()["error"]["code"] in {
+        "sort_not_supported_with_query",
+        "invalid_request",
+    }
+    assert nf.requests == []
+
+
+@pytest.mark.parametrize("sort,sent", [(None, "views"), ("views", "views"), ("published_at", "published")])
+def test_browsing_keeps_the_approved_raw_sorts(sort, sent):
+    nf = Foundation()
+    url = "/api/v1/discover?period=all" + (f"&sort={sort}" if sort else "")
+    body = client(nf).get(url).json()
+    assert body["meta"]["sort"] == (sort or "views")
+    assert nf.last("/api/viral").url.params["sort_by"] == sent
+    assert not any("Topic search" in n for n in body["meta"]["notes"])
+
+
+def test_relevance_is_not_a_browse_sort():
+    r = client().get("/api/v1/discover?sort=relevance")
+    assert r.status_code == 422
+
+
 # ---- F. OpenAPI --------------------------------------------------------------------------------------
 
 
@@ -697,7 +778,10 @@ def test_openapi_documents_every_endpoint_with_errors(openapi):
 
 def test_openapi_sort_and_platform_enums_are_exact(openapi):
     params = {p["name"]: p for p in openapi["paths"]["/api/v1/discover"]["get"]["parameters"]}
-    assert params["sort"]["schema"]["enum"] == ["views", "published_at"]
+    enums = [s.get("enum") for s in params["sort"]["schema"]["anyOf"] if "enum" in s]
+    assert enums == [["views", "published_at"]]  # relevance is never a choosable sort
+    assert {"type": "null"} in params["sort"]["schema"]["anyOf"]
+    assert "sort" not in {p["name"] for p in openapi["paths"]["/api/v1/search"]["get"]["parameters"]}
     assert params["platform"]["schema"]["enum"] == ["youtube", "instagram", "tiktok"]
     assert params["page_size"]["schema"]["maximum"] == 100
 

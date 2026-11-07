@@ -646,7 +646,8 @@
               {
                 "enum": [
                   "views",
-                  "published_at"
+                  "published_at",
+                  "relevance"
                 ],
                 "type": "string"
               },
@@ -654,6 +655,7 @@
                 "type": "null"
               }
             ],
+            "description": "the order actually applied: views or published_at when browsing; relevance for topic search (the data source ranks the collected videos by how closely they match the text); null when no single order applies",
             "title": "Sort"
           },
           "total": {
@@ -790,9 +792,29 @@
       "SortOut": {
         "additionalProperties": false,
         "properties": {
+          "applies_to": {
+            "description": "browse: chosen with the sort parameter; topic_search: applied automatically to text search",
+            "enum": [
+              "browse",
+              "topic_search"
+            ],
+            "title": "Applies To",
+            "type": "string"
+          },
           "available": {
             "title": "Available",
             "type": "boolean"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
           },
           "name": {
             "title": "Name",
@@ -812,7 +834,8 @@
         },
         "required": [
           "name",
-          "available"
+          "available",
+          "applies_to"
         ],
         "title": "SortOut",
         "type": "object"
@@ -1472,17 +1495,25 @@
             }
           },
           {
+            "description": "views (default) or published_at when browsing; not accepted with query, which is ordered by relevance",
             "in": "query",
             "name": "sort",
             "required": false,
             "schema": {
-              "default": "views",
-              "enum": [
-                "views",
-                "published_at"
+              "anyOf": [
+                {
+                  "enum": [
+                    "views",
+                    "published_at"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
               ],
-              "title": "Sort",
-              "type": "string"
+              "description": "views (default) or published_at when browsing; not accepted with query, which is ordered by relevance",
+              "title": "Sort"
             }
           },
           {
@@ -1696,20 +1727,6 @@
           },
           {
             "in": "query",
-            "name": "sort",
-            "required": false,
-            "schema": {
-              "default": "views",
-              "enum": [
-                "views",
-                "published_at"
-              ],
-              "title": "Sort",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
             "name": "platform",
             "required": false,
             "schema": {
@@ -1800,7 +1817,7 @@
             "description": "The provider timed out"
           }
         },
-        "summary": "Search videos in the collected corpus by topic text.",
+        "summary": "Topic search: the collected videos ranked by relevance to the text (not filtered).",
         "tags": [
           "content"
         ]

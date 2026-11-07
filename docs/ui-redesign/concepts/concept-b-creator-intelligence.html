@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ViralTrack concept B</title>
+<style>
+/* DESIGN CONCEPT B - Creator Intelligence. Not implemented in ViralTrack. Synthetic DEMO data.
+   Production would use: shadcn/ui Sheet (Radix Dialog) for the quick view, Motion for layout and
+   entrance animation, Lucide icons, Geist or Inter, Recharts sparklines once history is authorized. */
+:root[data-theme="dark"] {
+  --bg: #0c0d10; --panel: #15171c; --panel-2: #1c1f26; --ink: #f4f4f5; --ink-2: #c4c6cc; --muted: #8a8f99;
+  --line: #262a33; --accent: #ff6b4a; --accent-2: #ffb547; --accent-soft: rgba(255,107,74,.12); --focus: #ffb547;
+}
+:root[data-theme="light"] {
+  --bg: #fbfaf8; --panel: #ffffff; --panel-2: #f4f2ee; --ink: #18181b; --ink-2: #3f3f46; --muted: #71717a;
+  --line: #e7e5e0; --accent: #e5482a; --accent-2: #c77700; --accent-soft: #fff0eb; --focus: #c77700;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.5 "Geist", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+.banner { background: var(--accent-soft); color: var(--accent); font-size: 12px; padding: 6px 16px; text-align: center; border-bottom: 1px solid var(--line); }
+header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 22px; padding: 12px 28px; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.logo { font-weight: 700; letter-spacing: -.02em; font-size: 17px; display: flex; gap: 8px; align-items: center; }
+.logo span { width: 22px; height: 22px; border-radius: 6px; background: conic-gradient(from 200deg, var(--accent), var(--accent-2), var(--accent)); }
+nav.tabs { display: flex; gap: 4px; }
+nav.tabs a { color: var(--muted); text-decoration: none; padding: 6px 12px; border-radius: 999px; font-weight: 500; }
+nav.tabs a[aria-current] { color: var(--ink); background: var(--panel-2); }
+nav.tabs a:hover { color: var(--ink); }
+.right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+button { font: inherit; cursor: pointer; color: inherit; }
+.icon-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hero { padding: 34px 28px 10px; max-width: 1360px; margin: 0 auto; }
+.hero h1 { font-size: 34px; letter-spacing: -.03em; margin: 0 0 6px; font-weight: 700; }
+.hero p { color: var(--muted); margin: 0; max-width: 640px; }
+.searchbar { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+.q { flex: 1 1 380px; display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; font-size: 15px; color: var(--muted); }
+.sel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; color: var(--ink-2); display: flex; gap: 6px; align-items: center; }
+.sel b { color: var(--ink); font-weight: 600; }
+.pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.pill { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 5px 12px; color: var(--ink-2); font-size: 13px; }
+.pill[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.meta-row { max-width: 1360px; margin: 18px auto 0; padding: 0 28px; display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
+.fresh { display: inline-flex; align-items: center; gap: 6px; }
+.fresh i { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.18); }
+.sort { margin-left: auto; display: flex; gap: 6px; }
+.grid { max-width: 1360px; margin: 14px auto 40px; padding: 0 28px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 22px 18px; }
+.vc { background: transparent; border: 0; text-align: left; padding: 0; border-radius: 16px; animation: in .5s cubic-bezier(.2,.7,.2,1) both; }
+.vc .th { position: relative; aspect-ratio: 16/9; border-radius: 14px; overflow: hidden; transition: transform .25s ease, box-shadow .25s ease; }
+.vc:hover .th, .vc:focus-visible .th { transform: translateY(-3px); box-shadow: 0 14px 32px -12px rgba(0,0,0,.55); }
+.vc .th::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.55), transparent 45%); }
+.dur { position: absolute; right: 8px; bottom: 8px; z-index: 1; background: rgba(0,0,0,.78); color: #fff; font-size: 12px; font-weight: 600; padding: 1px 6px; border-radius: 5px; }
+.short { position: absolute; left: 8px; bottom: 8px; z-index: 1; background: rgba(255,255,255,.9); color: #111; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 5px; }
+.vc h3 { font-size: 15px; line-height: 1.35; margin: 12px 0 6px; font-weight: 600; letter-spacing: -.01em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.by { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 13px; }
+.av { width: 22px; height: 22px; border-radius: 50%; flex: none; }
+.stats { display: flex; gap: 14px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+.stats b { color: var(--ink); font-weight: 600; }
+@keyframes in { from { opacity: 0; transform: translateY(8px); } }
+.skel .th, .skel .ln { background: linear-gradient(90deg, var(--panel) 25%, var(--panel-2) 50%, var(--panel) 75%); background-size: 200% 100%; animation: sh 1.4s infinite linear; }
+.skel .ln { height: 12px; border-radius: 6px; margin-top: 12px; }
+@keyframes sh { to { background-position: -200% 0; } }
+.empty { grid-column: 1 / -1; border: 1px dashed var(--line); border-radius: 16px; padding: 34px; text-align: center; color: var(--muted); }
+.empty b { color: var(--ink); display: block; font-size: 16px; margin-bottom: 6px; }
+/* quick view drawer (Radix Dialog / shadcn Sheet in production) */
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 9; }
+.drawer { position: fixed; top: 0; right: 0; height: 100%; width: min(440px, 100%); background: var(--panel); border-left: 1px solid var(--line); z-index: 10; transform: translateX(100%); transition: transform .28s cubic-bezier(.2,.7,.2,1); padding: 22px; overflow: auto; }
+.open .scrim { opacity: 1; pointer-events: auto; } .open .drawer { transform: none; }
+.drawer .th { aspect-ratio: 16/9; border-radius: 12px; }
+.drawer h2 { font-size: 19px; letter-spacing: -.015em; margin: 16px 0 4px; }
+.dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+.dl div { background: var(--panel-2); border-radius: 12px; padding: 10px 12px; }
+.dl span { display: block; font-size: 12px; color: var(--muted); }
+.dl b { font-size: 18px; letter-spacing: -.01em; }
+.prov { font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; line-height: 1.7; }
+.kind { font-size: 10px; font-weight: 700; letter-spacing: .05em; border-radius: 4px; padding: 0 5px; margin-left: 4px; vertical-align: 1px; }
+.raw { background: rgba(34,197,94,.15); color: #22c55e; } .der { background: rgba(255,181,71,.15); color: var(--accent-2); }
+.close { position: absolute; right: 16px; top: 16px; }
+@media (max-width: 760px) { nav.tabs { display: none; } header, .hero, .meta-row, .grid { padding-left: 16px; padding-right: 16px; } .hero h1 { font-size: 26px; } .grid { grid-template-columns: 1fr 1fr; gap: 16px 12px; } }
+@media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="banner" role="note">DESIGN CONCEPT B · Creator Intelligence · not implemented · all values are synthetic DEMO data</div>
+<header>
+  <div class="logo"><span></span>ViralTrack</div>
+  <nav class="tabs" aria-label="Main"><a href="#">Overview</a><a href="#" aria-current="page">Discover</a><a href="#">Niches</a><a href="#">Creators</a><a href="#">Keywords</a><a href="#">Watchlists</a></nav>
+  <div class="right"><button class="icon-btn" aria-label="Alerts">🔔</button><button class="icon-btn" id="theme" aria-label="Toggle theme">◐</button></div>
+</header>
+<section class="hero">
+  <h1>Discover</h1>
+  <p>Videos from creators up to 1M followers, ordered by what YouTube reports. No predictions, no hidden scores.</p>
+  <div class="searchbar" role="search">
+    <div class="q"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search a topic, e.g. “local LLM”</div>
+    <div class="sel">Period <b>30 days</b> ▾</div><div class="sel">Niche <b>All</b> ▾</div><div class="sel">Creator size <b>≤ 100K</b> ▾</div>
+  </div>
+  <div class="pills" role="group" aria-label="Length">
+    <button class="pill" aria-pressed="true">Any length</button><button class="pill" aria-pressed="false">≤ 3 min</button><button class="pill" aria-pressed="false">Over 3 min</button>
+    <button class="pill" aria-pressed="false" id="sk">Show loading state</button><button class="pill" aria-pressed="false" id="em">Show empty state</button>
+  </div>
+</section>
+<div class="meta-row"><span class="fresh"><i></i>Read from YouTube 2 h ago · DEMO</span><span>8 videos</span>
+  <div class="sort" role="group" aria-label="Sort"><button class="pill" aria-pressed="true">Most views</button><button class="pill" aria-pressed="false">Newest</button></div></div>
+<main class="grid" id="grid" aria-live="polite"></main>
+<div id="qv"><div class="scrim" id="scrim"></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="qvt" id="drawer"></aside></div>
+<script src="demo-data.js"></script>
+<script>
+const D = window.VT_DEMO, F = window.VT_FMT, grid = document.getElementById("grid");
+const bg = h => `background:linear-gradient(135deg,hsl(${h} 75% 58%),hsl(${h + 50} 65% 28%))`;
+function cards() {
+  grid.innerHTML = [...D.videos].sort((a, b) => b.views - a.views).map((v, i) => `
+  <button class="vc" data-id="${v.id}" style="animation-delay:${i * 45}ms" aria-label="${v.title}, ${F.compact(v.views)} views">
+    <div class="th" style="${bg(v.hue)}"><span class="dur">${F.duration(v.duration)}</span>${v.duration <= 180 ? '<span class="short">≤ 3 min</span>' : ''}</div>
+    <h3>${v.title}</h3>
+    <div class="by"><span class="av" style="${bg(v.hue + 120)}"></span>${v.creator} · ${F.compact(v.followers)}</div>
+    <div class="stats"><span><b>${F.compact(v.views)}</b> views</span><span>${F.age(v.ageDays)}</span></div>
+  </button>`).join("");
+}
+function skeleton() { grid.innerHTML = Array.from({ length: 8 }, () => '<div class="vc skel"><div class="th"></div><div class="ln" style="width:90%"></div><div class="ln" style="width:55%"></div></div>').join(""); }
+function empty() { grid.innerHTML = '<div class="empty"><b>No videos match these filters</b>Try a longer period or a larger creator size. Nothing was hidden: this is what the collected data contains.</div>'; }
+cards();
+grid.addEventListener("click", e => {
+  const b = e.target.closest(".vc[data-id]"); if (!b) return;
+  const v = D.videos.find(x => x.id === b.dataset.id), eng = F.engagement(v);
+  document.getElementById("drawer").innerHTML = `<button class="icon-btn close" id="x" aria-label="Close">✕</button>
+    <div class="th" style="${bg(v.hue)}"></div><h2 id="qvt">${v.title}</h2>
+    <div class="by"><span class="av" style="${bg(v.hue + 120)}"></span>${v.creator} · ${F.compact(v.followers)} followers</div>
+    <div class="dl">
+      <div><span>Views <em class="kind raw">RAW</em></span><b>${v.views.toLocaleString()}</b></div>
+      <div><span>Likes <em class="kind raw">RAW</em></span><b>${v.likes == null ? "Hidden by creator" : v.likes.toLocaleString()}</b></div>
+      <div><span>Comments <em class="kind raw">RAW</em></span><b>${v.comments.toLocaleString()}</b></div>
+      <div><span>Engagement <em class="kind der">DERIVED</em></span><b>${eng == null ? "Not available" : eng.toFixed(1) + "%"}</b></div>
+      <div><span>Length <em class="kind raw">RAW</em></span><b>${F.duration(v.duration)}</b></div>
+      <div><span>Published <em class="kind raw">RAW</em></span><b>${F.age(v.ageDays)}</b></div>
+    </div>
+    <button class="pill" style="width:100%;padding:10px">+ Add to watchlist</button>
+    <p class="prov">Source: YouTube Data API through niche-finder · read 2 h ago · origin DEMO<br>
+    Engagement = (likes + comments) ÷ views; not shown when likes are hidden.<br>History chart appears here once tracking (D6) is authorized.</p>`;
+  document.getElementById("qv").className = "open"; document.getElementById("x").focus();
+  document.getElementById("x").onclick = close;
+});
+function close() { document.getElementById("qv").className = ""; }
+document.getElementById("scrim").onclick = close;
+document.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+document.getElementById("sk").onclick = () => { skeleton(); setTimeout(cards, 1600); };
+document.getElementById("em").onclick = empty;
+document.getElementById("theme").onclick = () => { const r = document.documentElement; r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark"; };
+</script>
+</body>
+</html>

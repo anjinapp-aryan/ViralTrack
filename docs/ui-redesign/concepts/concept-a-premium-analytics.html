@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ViralTrack concept A</title>
+<style>
+/* DESIGN CONCEPT A - Premium Analytics. Not implemented in ViralTrack. Synthetic DEMO data.
+   Production would use: Tailwind tokens, shadcn/ui (Radix) components, Recharts charts, Lucide icons, Inter. */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --panel-2: #f1f3f6; --ink: #0f172a; --ink-2: #475569; --muted: #64748b;
+  --line: #e2e8f0; --accent: #4f46e5; --accent-soft: #eef2ff; --good: #047857; --warn: #b45309;
+  --radius: 10px; --shadow: 0 1px 2px rgba(15,23,42,.06), 0 1px 1px rgba(15,23,42,.04);
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+:root[data-theme="dark"] {
+  --bg: #0b0f17; --panel: #111827; --panel-2: #161f2e; --ink: #e5e9f0; --ink-2: #b4bccb; --muted: #8b95a7;
+  --line: #222c3c; --accent: #8b8cf8; --accent-soft: #1e1b4b; --good: #34d399; --warn: #fbbf24;
+  --shadow: 0 1px 2px rgba(0,0,0,.4);
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 var(--font); background: var(--bg); color: var(--ink); font-feature-settings: "tnum" 1, "cv11" 1; }
+.banner { background: #fef3c7; color: #78350f; font-size: 12px; padding: 6px 16px; text-align: center; }
+:root[data-theme="dark"] .banner { background: #3b2a06; color: #fde68a; }
+.app { display: grid; grid-template-columns: 232px 1fr; min-height: calc(100vh - 29px); }
+aside { background: var(--panel); border-right: 1px solid var(--line); padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 15px; padding: 4px 8px 16px; letter-spacing: -.01em; }
+.logo i { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), #06b6d4); display: grid; place-items: center; color: #fff; font-style: normal; font-size: 13px; }
+.nav-h { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 14px 8px 4px; }
+.nav a { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 7px; color: var(--ink-2); text-decoration: none; }
+.nav a:hover { background: var(--panel-2); color: var(--ink); }
+.nav a[aria-current] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.side-foot { margin-top: auto; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding: 12px 8px 0; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--good); margin-right: 6px; }
+main { padding: 20px 28px 40px; min-width: 0; }
+.top { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.top h1 { font-size: 20px; margin: 0; letter-spacing: -.015em; font-weight: 650; }
+.search { margin-left: auto; display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; width: min(360px, 40vw); color: var(--muted); }
+.search kbd { margin-left: auto; font: 11px var(--font); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+button { font: inherit; cursor: pointer; }
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 10px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 10px; font-size: 13px; color: var(--ink-2); }
+.chip b { color: var(--ink); font-weight: 600; }
+.chip.add { border-style: dashed; color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-left: auto; }
+.seg button { border: 0; background: var(--panel); padding: 5px 10px; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.kpi { padding: 14px 16px; }
+.kpi .l { color: var(--muted); font-size: 12px; }
+.kpi .v { font-size: 24px; font-weight: 650; letter-spacing: -.02em; margin-top: 4px; }
+.kpi .s { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-bottom: 16px; }
+.card h2 { font-size: 13px; margin: 0; padding: 14px 16px 0; font-weight: 600; }
+.card .sub { font-size: 12px; color: var(--muted); padding: 2px 16px 0; }
+.bars { padding: 12px 16px 16px; display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 150px 1fr 56px; gap: 10px; align-items: center; font-size: 13px; }
+.bar-row .t { height: 8px; background: var(--panel-2); border-radius: 99px; overflow: hidden; }
+.bar-row .t span { display: block; height: 100%; background: var(--accent); border-radius: 99px; transform-origin: left; animation: grow .7s cubic-bezier(.2,.7,.2,1) both; }
+.bar-row .n { text-align: right; color: var(--ink-2); }
+@keyframes grow { from { transform: scaleX(0); } }
+.hist { display: flex; align-items: flex-end; gap: 10px; height: 120px; padding: 16px 16px 6px; }
+.hist div { flex: 1; background: linear-gradient(to top, var(--accent), color-mix(in srgb, var(--accent) 55%, transparent)); border-radius: 5px 5px 2px 2px; animation: rise .6s ease-out both; }
+.hist-l { display: flex; gap: 10px; padding: 0 16px 14px; font-size: 11px; color: var(--muted); }
+.hist-l span { flex: 1; text-align: center; }
+@keyframes rise { from { transform: scaleY(0); transform-origin: bottom; } }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th.num, td.num { text-align: right; }
+th[aria-sort] { color: var(--ink); }
+th .lock { opacity: .55; font-size: 11px; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr:hover td { background: var(--panel-2); }
+.vid { display: flex; gap: 12px; align-items: center; min-width: 280px; }
+.thumb { width: 88px; aspect-ratio: 16/9; border-radius: 6px; flex: none; position: relative; overflow: hidden; }
+.thumb small { position: absolute; right: 4px; bottom: 3px; background: rgba(0,0,0,.75); color: #fff; font-size: 10px; padding: 0 4px; border-radius: 3px; }
+.vid .tt { font-weight: 550; color: var(--ink); line-height: 1.3; }
+.vid .cr { color: var(--muted); font-size: 12px; }
+.na { color: var(--muted); font-style: italic; }
+.tag { font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; color: var(--muted); }
+.prov { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); padding: 10px 16px; border-top: 1px solid var(--line); }
+.note { font-size: 12px; color: var(--muted); margin-top: 12px; }
+@media (max-width: 960px) {
+  .app { grid-template-columns: 1fr; } aside { display: none; }
+  .kpis { grid-template-columns: repeat(2, 1fr); } .grid2 { grid-template-columns: 1fr; }
+  main { padding: 16px; } .search { width: auto; flex: 1; } th.hide, td.hide { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="banner" role="note">DESIGN CONCEPT A · Premium Analytics · not implemented · all values are synthetic DEMO data</div>
+<div class="app">
+  <aside>
+    <div class="logo"><i>V</i>ViralTrack</div>
+    <nav class="nav" aria-label="Main">
+      <a href="#" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Overview</a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Discover</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>Niches</a>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Creators</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>Keywords</a>
+      <div class="nav-h">Tracking</div>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Watchlists</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>Alerts</a>
+      <div class="nav-h">Workspace</div>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>Settings</a>
+    </nav>
+    <div class="side-foot"><span class="dot"></span>YouTube Data API · DEMO<br>Last read 10:42 UTC · 30-day retention</div>
+  </aside>
+  <main>
+    <div class="top">
+      <h1>Overview</h1>
+      <div class="search" role="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search videos, creators, keywords<kbd>Ctrl K</kbd></div>
+      <button class="btn" id="theme" aria-label="Toggle theme">◐</button>
+    </div>
+    <div class="filters" aria-label="Filters">
+      <span class="chip">Period <b>Last 30 days</b></span>
+      <span class="chip">Niche <b>All</b></span>
+      <span class="chip">Creator size <b>≤ 1M followers</b></span>
+      <span class="chip">Length <b>Any</b></span>
+      <span class="chip add">+ Filter</span>
+      <div class="seg" role="group" aria-label="Sort">
+        <button aria-pressed="true">Most views</button><button aria-pressed="false">Newest</button>
+      </div>
+    </div>
+    <section class="kpis" aria-label="Summary">
+      <div class="card kpi"><div class="l">Videos in view</div><div class="v" data-count="204">204</div><div class="s">6 creators · 1 niche</div></div>
+      <div class="card kpi"><div class="l">Total views (sum, raw)</div><div class="v">6.7M</div><div class="s">as last read from YouTube</div></div>
+      <div class="card kpi"><div class="l">Median engagement</div><div class="v">4.6%</div><div class="s">7 of 8 with visible likes</div></div>
+      <div class="card kpi"><div class="l">Data freshness</div><div class="v">2 h</div><div class="s">oldest record 2 days</div></div>
+    </section>
+    <section class="grid2">
+      <div class="card"><h2>Views by category</h2><div class="sub">Sum of raw view counts in the selection</div><div class="bars" id="bars"></div></div>
+      <div class="card"><h2>Uploads by weekday</h2><div class="sub">Count of videos published (UTC)</div><div class="hist" id="hist"></div><div class="hist-l"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div></div>
+    </section>
+    <section class="card" aria-label="Videos">
+      <h2>Videos</h2><div class="sub">Sorted by views. Other sorts are unavailable by policy.</div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Video</th><th class="num" aria-sort="descending">Views ↓</th><th class="num hide">Likes</th><th class="num hide">Comments</th><th class="num">Engagement <span class="lock" title="Shown, not sortable">ⓘ</span></th><th class="num hide">Length</th><th class="num">Published</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table></div>
+      <div class="prov"><span>Source: YouTube Data API via niche-finder</span><span>RAW: views, likes, comments, dates, length</span><span>DERIVED (allowed): engagement = (likes + comments) / views</span><span>Hidden likes are shown as “hidden”, never as 0</span></div>
+    </section>
+    <p class="note">Concept notes: table is TanStack Table; chips and segmented control are shadcn/ui (Radix) primitives; charts are Recharts via the shadcn chart wrapper; command palette is shadcn Command (cmdk).</p>
+  </main>
+</div>
+<script src="demo-data.js"></script>
+<script>
+const D = window.VT_DEMO, F = window.VT_FMT;
+const max = Math.max(...D.categories.map(c => c.views));
+document.getElementById("bars").innerHTML = D.categories.map((c, i) =>
+  `<div class="bar-row"><span>${c.name}</span><span class="t"><span style="width:${c.views / max * 100}%;animation-delay:${i * 80}ms"></span></span><span class="n">${F.compact(c.views)}</span></div>`).join("");
+const hm = Math.max(...D.uploadsByWeekday);
+document.getElementById("hist").innerHTML = D.uploadsByWeekday.map((n, i) =>
+  `<div style="height:${n / hm * 100}%;animation-delay:${i * 50}ms" title="${n} uploads"></div>`).join("");
+document.getElementById("rows").innerHTML = [...D.videos].sort((a, b) => b.views - a.views).map(v => {
+  const e = F.engagement(v);
+  return `<tr><td><div class="vid"><div class="thumb" style="background:linear-gradient(135deg,hsl(${v.hue} 70% 55%),hsl(${v.hue + 40} 60% 30%))"><small>${F.duration(v.duration)}</small></div>
+    <div><div class="tt">${v.title}</div><div class="cr">${v.creator} · ${F.compact(v.followers)} followers ${v.duration <= 180 ? '<span class="tag">≤ 3 min</span>' : ''}</div></div></div></td>
+    <td class="num"><b>${F.compact(v.views)}</b></td><td class="num hide">${v.likes == null ? '<span class="na">hidden</span>' : F.compact(v.likes)}</td>
+    <td class="num hide">${F.compact(v.comments)}</td><td class="num">${e == null ? '<span class="na">n/a</span>' : e.toFixed(1) + '%'}</td>
+    <td class="num hide">${F.duration(v.duration)}</td><td class="num">${F.age(v.ageDays)}</td></tr>`;
+}).join("");
+document.getElementById("theme").onclick = () => {
+  const r = document.documentElement; r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark";
+};
+</script>
+</body>
+</html>

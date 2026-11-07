@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
@@ -267,7 +268,11 @@ class YouTubeProvider(PlatformProvider):
             "niche": query.niche,
             **_NO_UPSTREAM_SHORTS_FILTER,
         }
-        return self._page(self._client.get("/api/search", params), query.short_form, wanted)
+        body = self._client.get("/api/search", params)
+        page = self._page(body, query.short_form, wanted)
+        if query.text and _no_topic_data(body):
+            page = replace(page, notes=(*page.notes, NO_TOPIC_DATA_NOTE))
+        return page
 
     def check_ready(self) -> bool:
         """The foundation's GET /api/health (free, read-only, no quota) answered with ok=true."""
@@ -366,6 +371,20 @@ class YouTubeProvider(PlatformProvider):
             if exc.retry_after:
                 self._cooldown_until = self._clock() + timedelta(seconds=exc.retry_after)
             raise
+
+
+# With text, the foundation orders results by an embedding similarity (INTERNAL_ONLY: never mapped or
+# returned). When no returned video has one, the order is not by relevance at all, and users are told so.
+NO_TOPIC_DATA_NOTE = ("The data source has no topic data for these videos, so they are not ordered by "
+                      "relevance to the search text.")
+
+
+def _no_topic_data(body: dict) -> bool:
+    """True when results exist and none carries a similarity value. Only the presence is read."""
+    results = body.get("results")
+    if not isinstance(results, list) or not results:
+        return False
+    return all(not isinstance(r, dict) or r.get("semanticScore") is None for r in results)
 
 
 def _bounded_followers(value: int | None) -> int:

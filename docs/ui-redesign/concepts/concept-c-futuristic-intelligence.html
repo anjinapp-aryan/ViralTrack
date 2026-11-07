@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ViralTrack concept C</title>
+<style>
+/* DESIGN CONCEPT C - Futuristic Intelligence. Not implemented in ViralTrack. Synthetic DEMO data.
+   The canvas effects here are a stand-in drawn with the 2D canvas API so the file has no dependency.
+   Production would use: three.js through react-three-fiber (lazy-loaded, one canvas, paused when hidden)
+   for the hero field, and sigma.js + graphology (WebGL) for the niche map, Motion for counters. */
+:root {
+  --bg: #05070d; --glass: rgba(18, 24, 38, .62); --glass-2: rgba(28, 36, 56, .55); --ink: #e8ecf4; --ink-2: #b7c0d3;
+  --muted: #7d889e; --line: rgba(148, 163, 184, .16); --teal: #2dd4bf; --violet: #a78bfa; --blue: #60a5fa;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: radial-gradient(1200px 600px at 75% -10%, rgba(167,139,250,.16), transparent 60%), radial-gradient(900px 500px at -10% 10%, rgba(45,212,191,.12), transparent 60%), var(--bg); color: var(--ink); font: 14px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; min-height: 100vh; }
+.banner { font-size: 12px; text-align: center; padding: 6px; color: var(--teal); border-bottom: 1px solid var(--line); background: rgba(45,212,191,.06); }
+.app { display: grid; grid-template-columns: 76px 1fr; min-height: calc(100vh - 30px); }
+.rail { border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 0; background: rgba(5,7,13,.6); }
+.rail .mk { width: 36px; height: 36px; border-radius: 11px; background: conic-gradient(from 120deg, var(--teal), var(--violet), var(--blue), var(--teal)); margin-bottom: 14px; box-shadow: 0 0 24px rgba(45,212,191,.35); }
+.rail a { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; color: var(--muted); text-decoration: none; font-size: 11px; }
+.rail a[aria-current] { color: var(--ink); background: var(--glass-2); box-shadow: inset 0 0 0 1px var(--line); }
+.rail svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+main { padding: 22px 28px 40px; min-width: 0; }
+.hero { position: relative; border-radius: 22px; overflow: hidden; border: 1px solid var(--line); min-height: 220px; padding: 28px; background: linear-gradient(135deg, rgba(18,24,38,.8), rgba(10,14,24,.6)); }
+#field { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .75; }
+.hero > *:not(canvas) { position: relative; }
+.eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--teal); }
+.hero h1 { font-size: 32px; letter-spacing: -.03em; margin: 6px 0 4px; background: linear-gradient(90deg, #fff, #c7d2fe 60%, var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p { color: var(--ink-2); max-width: 560px; margin: 0; }
+.cmd { margin-top: 18px; max-width: 560px; display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 14px; background: rgba(5,7,13,.55); border: 1px solid var(--line); backdrop-filter: blur(10px); color: var(--muted); }
+.cmd kbd { margin-left: auto; font: 11px inherit; border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 16px 0; }
+.g { background: var(--glass); border: 1px solid var(--line); border-radius: 18px; backdrop-filter: blur(16px) saturate(140%); box-shadow: 0 1px 0 rgba(255,255,255,.04) inset; }
+.kpi { padding: 16px 18px; }
+.kpi span { font-size: 12px; color: var(--muted); }
+.kpi b { display: block; font-size: 28px; letter-spacing: -.03em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.kpi small { color: var(--muted); }
+.row { display: grid; grid-template-columns: 1.25fr 1fr; gap: 14px; }
+.g h2 { margin: 0; font-size: 14px; padding: 16px 18px 0; font-weight: 600; }
+.g .sub { font-size: 12px; color: var(--muted); padding: 2px 18px 0; }
+#map { width: 100%; height: 340px; display: block; cursor: grab; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); padding: 0 18px 14px; flex-wrap: wrap; }
+.list { padding: 10px 10px 12px; }
+.it { display: grid; grid-template-columns: 96px 1fr auto; gap: 12px; align-items: center; padding: 8px; border-radius: 12px; }
+.it:hover { background: var(--glass-2); }
+.it .th { aspect-ratio: 16/9; border-radius: 9px; position: relative; overflow: hidden; }
+.it .th i { position: absolute; right: 4px; bottom: 3px; font-style: normal; font-size: 10px; background: rgba(0,0,0,.7); padding: 0 4px; border-radius: 3px; }
+.it .t { font-weight: 550; line-height: 1.3; }
+.it .c { font-size: 12px; color: var(--muted); }
+.it .v { text-align: right; font-variant-numeric: tabular-nums; }
+.it .v small { display: block; color: var(--muted); font-size: 11px; }
+.note { font-size: 12px; color: var(--muted); margin-top: 14px; }
+.toggle { position: absolute; top: 16px; right: 16px; font: 12px inherit; background: rgba(5,7,13,.6); color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+@media (max-width: 980px) { .row { grid-template-columns: 1fr; } .kpis { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .app { grid-template-columns: 1fr; } .rail { display: none; } main { padding: 14px; } .hero h1 { font-size: 24px; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="banner" role="note">DESIGN CONCEPT C · Futuristic Intelligence · not implemented · all values are synthetic DEMO data · canvas effects are stand-ins for three.js / sigma.js</div>
+<div class="app">
+  <nav class="rail" aria-label="Main">
+    <div class="mk" aria-hidden="true"></div>
+    <a href="#" aria-current="page" title="Overview"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></a>
+    <a href="#" title="Discover"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
+    <a href="#" title="Niches"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="10" cy="18" r="2.5"/><path d="M8 7l7.5 1M7 8l2.5 7.5M16.5 10l-5 6"/></svg></a>
+    <a href="#" title="Creators"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a>
+    <a href="#" title="Watchlists"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></a>
+    <a href="#" title="Alerts"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg></a>
+  </nav>
+  <main>
+    <section class="hero">
+      <canvas id="field" aria-hidden="true"></canvas>
+      <button class="toggle" id="mot" aria-pressed="true">Motion on</button>
+      <div class="eyebrow">Observed, not predicted</div>
+      <h1>What the collected data shows this month</h1>
+      <p>Every number below is read from the YouTube Data API or computed from it with a formula you can open. Unknown values stay unknown.</p>
+      <div class="cmd" role="search">⌕ Ask: “cooking videos under 3 minutes, last 30 days”<kbd>Ctrl K</kbd></div>
+    </section>
+    <section class="kpis" aria-label="Summary">
+      <div class="g kpi"><span>Videos observed</span><b data-n="204">0</b><small>6 creators</small></div>
+      <div class="g kpi"><span>Views (raw sum)</span><b data-n="6700000" data-c>0</b><small>last read 2 h ago</small></div>
+      <div class="g kpi"><span>Niches</span><b data-n="4">0</b><small>by collection label</small></div>
+      <div class="g kpi"><span>Tracked creators</span><b data-n="2">0</b><small>watchlist</small></div>
+    </section>
+    <section class="row">
+      <div class="g"><h2>Niche map</h2><div class="sub">Node size = videos collected · links = creator tags the niches share · drag to explore</div>
+        <canvas id="map" aria-label="Niche map, four niches connected by shared tags"></canvas>
+        <div class="legend"><span>● size: raw video count</span><span>— link: shared tags (raw metadata)</span><span>Not a popularity or similarity score</span></div></div>
+      <div class="g"><h2>Most viewed</h2><div class="sub">Sorted by raw views · only views or newest are available</div><div class="list" id="list"></div></div>
+    </section>
+    <p class="note">Performance rules for this direction: one WebGL context, lazy-loaded after first paint, paused when off-screen or the tab is hidden, disabled under prefers-reduced-motion or without WebGL (static gradient fallback). Effects never sit behind tables or numbers.</p>
+  </main>
+</div>
+<script src="demo-data.js"></script>
+<script>
+const D = window.VT_DEMO, F = window.VT_FMT;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let motion = !reduce;
+/* KPI counters (Motion's animate() in production) */
+document.querySelectorAll("[data-n]").forEach(el => {
+  const n = +el.dataset.n, fmt = x => el.hasAttribute("data-c") ? F.compact(Math.round(x)) : Math.round(x).toLocaleString();
+  if (!motion) { el.textContent = fmt(n); return; }
+  const t0 = performance.now(); (function step(t) { const p = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(n * e); if (p < 1) requestAnimationFrame(step); })(t0);
+});
+/* list */
+document.getElementById("list").innerHTML = [...D.videos].sort((a, b) => b.views - a.views).slice(0, 6).map(v => `
+  <div class="it"><div class="th" style="background:linear-gradient(135deg,hsl(${v.hue} 70% 50%),hsl(${v.hue + 60} 70% 22%))"><i>${F.duration(v.duration)}</i></div>
+  <div><div class="t">${v.title}</div><div class="c">${v.creator} · ${F.age(v.ageDays)}</div></div>
+  <div class="v"><b>${F.compact(v.views)}</b><small>views</small></div></div>`).join("");
+/* hero field: stand-in for a three.js points + lines scene */
+const cv = document.getElementById("field"), cx = cv.getContext("2d"); let pts = [], raf;
+function size(c) { const r = c.getBoundingClientRect(), d = Math.min(devicePixelRatio, 2); c.width = r.width * d; c.height = r.height * d; c.getContext("2d").setTransform(d, 0, 0, d, 0, 0); return r; }
+function initField() { const r = size(cv); pts = Array.from({ length: Math.round(r.width / 14) }, () => ({ x: Math.random() * r.width, y: Math.random() * r.height, vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25 })); }
+function drawField() {
+  const r = cv.getBoundingClientRect(); cx.clearRect(0, 0, r.width, r.height);
+  for (const p of pts) { if (motion) { p.x += p.vx; p.y += p.vy; } if (p.x < 0 || p.x > r.width) p.vx *= -1; if (p.y < 0 || p.y > r.height) p.vy *= -1; }
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+    const a = pts[i], b = pts[j], d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d < 110) { cx.strokeStyle = `rgba(96,165,250,${(1 - d / 110) * .22})`; cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); }
+  }
+  for (const p of pts) { cx.fillStyle = "rgba(45,212,191,.7)"; cx.beginPath(); cx.arc(p.x, p.y, 1.4, 0, 7); cx.fill(); }
+  if (motion && !document.hidden) raf = requestAnimationFrame(drawField);
+}
+initField(); drawField();
+document.addEventListener("visibilitychange", () => { if (!document.hidden && motion) drawField(); });
+document.getElementById("mot").onclick = e => { motion = !motion; e.target.textContent = motion ? "Motion on" : "Motion off"; e.target.setAttribute("aria-pressed", motion); if (motion) drawField(); };
+/* niche map: stand-in for sigma.js (WebGL) with a ForceAtlas2 layout */
+const mp = document.getElementById("map"), mx = mp.getContext("2d");
+const nodes = D.categories.map((c, i) => ({ name: c.name, n: c.videos, x: 0, y: 0, a: i / 4 * Math.PI * 2 }));
+const links = [[0, 1, 3], [0, 2, 5], [1, 2, 1], [0, 3, 2]];
+let rot = 0, drag = null, off = { x: 0, y: 0 };
+function drawMap() {
+  const r = size(mp), c = { x: r.width / 2 + off.x, y: r.height / 2 + off.y }; mx.clearRect(0, 0, r.width, r.height);
+  nodes.forEach(nd => { const R = Math.min(r.width, r.height) * .3; nd.x = c.x + Math.cos(nd.a + rot) * R * (nd.n > 5 ? .2 : 1); nd.y = c.y + Math.sin(nd.a + rot) * R * .8 * (nd.n > 5 ? .2 : 1); });
+  links.forEach(([a, b, w]) => { const g = mx.createLinearGradient(nodes[a].x, nodes[a].y, nodes[b].x, nodes[b].y); g.addColorStop(0, "rgba(45,212,191,.55)"); g.addColorStop(1, "rgba(167,139,250,.55)"); mx.strokeStyle = g; mx.lineWidth = w; mx.beginPath(); mx.moveTo(nodes[a].x, nodes[a].y); mx.lineTo(nodes[b].x, nodes[b].y); mx.stroke(); });
+  nodes.forEach(nd => { const rad = 10 + nd.n * 3; const g = mx.createRadialGradient(nd.x, nd.y, 0, nd.x, nd.y, rad * 2.2); g.addColorStop(0, "rgba(96,165,250,.45)"); g.addColorStop(1, "rgba(96,165,250,0)"); mx.fillStyle = g; mx.beginPath(); mx.arc(nd.x, nd.y, rad * 2.2, 0, 7); mx.fill(); mx.fillStyle = "#0b1222"; mx.strokeStyle = "rgba(147,197,253,.9)"; mx.lineWidth = 1.5; mx.beginPath(); mx.arc(nd.x, nd.y, rad, 0, 7); mx.fill(); mx.stroke(); mx.fillStyle = "#e8ecf4"; mx.font = "12px system-ui"; mx.textAlign = "center"; mx.fillText(nd.name, nd.x, nd.y + rad + 16); mx.fillStyle = "#7d889e"; mx.fillText(nd.n + " videos", nd.x, nd.y + rad + 30); });
+  if (motion && !drag) rot += .0015;
+  requestAnimationFrame(drawMap);
+}
+drawMap();
+mp.onpointerdown = e => { drag = { x: e.clientX - off.x, y: e.clientY - off.y }; mp.setPointerCapture(e.pointerId); };
+mp.onpointermove = e => { if (drag) off = { x: e.clientX - drag.x, y: e.clientY - drag.y }; };
+mp.onpointerup = () => drag = null;
+addEventListener("resize", initField);
+</script>
+</body>
+</html>
