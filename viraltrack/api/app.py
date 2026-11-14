@@ -15,6 +15,7 @@ import time
 import uuid
 from collections.abc import Callable
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from typing import Literal
 
 from fastapi import FastAPI, Path, Query, Request
@@ -43,7 +44,7 @@ from viraltrack.providers.base import DiscoveryQuery, PlatformProvider, SearchQu
 from viraltrack.providers.registry import build_providers
 from viraltrack.providers.youtube.mapping import ORIGINS
 from viraltrack.providers.youtube.metric_policy import RULES
-from viraltrack.providers.youtube.provider import MAX_CREATOR_FOLLOWERS
+from viraltrack.providers.youtube.provider import CREATOR_CONTENT_WINDOW, MAX_CREATOR_FOLLOWERS
 
 API_VERSION = "1.0.0"
 PAGE_SIZE_MAX = 100
@@ -89,12 +90,18 @@ PUBLIC_CAPABILITIES = {
     Capability.DISCOVER_CONTENT: "Videos in the collected corpus, filtered by raw values",
     Capability.SEARCH_CONTENT: "Text search in the collected corpus",
     Capability.GET_CREATOR: "Creators already collected",
+    Capability.CREATOR_CONTENT: "A creator's newest collected videos (title, date and views only)",
     Capability.SHORT_FORM: "Duration filter (at most 180 seconds); not the platform's Shorts classification",
     Capability.ENGAGEMENT_METRICS: "Likes and comments where the platform reports them",
     Capability.GLOBAL_TRENDING: "A platform-wide trending feed",
     Capability.HASHTAGS: "Hashtags",
     Capability.AUDIO: "Trending audio",
 }
+
+CREATOR_VIDEOS_NOTE = (
+    "Newest collected videos of this creator, ordered by publication time. The data source lists only the "
+    "title, publication time and views here: likes, comments, length and thumbnail are not reported."
+)
 
 Sort = Literal["views", "published_at"]
 Duration = Literal["any", "up_to_3_min", "over_3_min"]
@@ -199,10 +206,12 @@ def create_app(
             raise ApiError(503, "platform_disabled", f"{p.value} is disabled on this deployment")
         return providers[p]
 
-    def meta(page_no, page_size, items, window, fetched, total, notes, sort) -> schemas.PageMeta:
+    def meta(
+        page_no, page_size, items, window, fetched, total, notes, sort, cap=RESULT_WINDOW
+    ) -> schemas.PageMeta:
         if len(items) > window:
             has_more = True
-        elif fetched >= RESULT_WINDOW and len(items) >= RESULT_WINDOW:
+        elif fetched >= cap and len(items) >= cap:
             has_more = None
         else:
             has_more = False
@@ -220,27 +229,28 @@ def create_app(
             notes=list(notes),
         )
 
-    def window_of(page_no: int, page_size: int) -> tuple[int, int]:
+    def window_of(page_no: int, page_size: int, cap: int = RESULT_WINDOW) -> tuple[int, int]:
         window = page_no * page_size
-        if window > RESULT_WINDOW:
+        if window > cap:
             raise ApiError(
                 422,
                 "page_out_of_range",
-                f"page x page_size must be at most {RESULT_WINDOW}; narrow the filters instead",
-                [schemas.ErrorDetail(field="page", message=f"at most {RESULT_WINDOW // page_size}")],
+                f"page x page_size must be at most {cap}; narrow the filters instead",
+                [schemas.ErrorDetail(field="page", message=f"at most {cap // page_size}")],
             )
-        return window, min(window + 1, RESULT_WINDOW)
+        return window, min(window + 1, cap)
 
     def topic_page(result, page_no, page_size, window, fetched):
         page = video_page(result, page_no, page_size, window, fetched, "relevance")
         page.meta.notes = [TOPIC_SEARCH_NOTE, *page.meta.notes]
         return page
 
-    def video_page(result, page_no, page_size, window, fetched, sort):
+    def video_page(result, page_no, page_size, window, fetched, sort, cap=RESULT_WINDOW):
         items = list(result.items)
         data = [serialize.video(c) for c in items[(page_no - 1) * page_size : window]]
         return schemas.Page[schemas.Video](
-            data=data, meta=meta(page_no, page_size, items, window, fetched, result.total, result.notes, sort)
+            data=data,
+            meta=meta(page_no, page_size, items, window, fetched, result.total, result.notes, sort, cap),
         )
 
     # ---- health ----
@@ -538,11 +548,33 @@ def create_app(
             origin=origin.value,
             demo=serialize.is_demo(origin),
             notes=[
-                "Listing a creator's videos is not available yet: the provider has no per-creator video "
-                "list. Use /api/v1/discover or /api/v1/search."
+                "Only the platform's follower and upload counts are shown here, each null when hidden or not "
+                "reported. The creator's videos are listed by /api/v1/creators/{creator_id}/videos."
             ],
         )
         return schemas.Item[schemas.CreatorDetail](data=detail)
+
+    @app.get(
+        "/api/v1/creators/{creator_id}/videos",
+        response_model=schemas.Page[schemas.Video],
+        tags=["creators"],
+        responses={**ERRORS, 404: {**_ERROR, "description": "Unknown creator"}},
+        summary="A creator's newest collected videos (title, publication time and views), newest first.",
+    )
+    def creator_videos(
+        creator_id: str = Path(..., pattern=r"^[A-Za-z0-9_-]{1,64}$"),
+        period: str = Query(
+            "all", pattern=PERIOD_PATTERN, description="all, or 1-9999 hours (h) or days (d)"
+        ),
+        platform: schemas.PlatformName = Query("youtube"),
+        page: int = Query(1, ge=1, le=CREATOR_CONTENT_WINDOW),
+        page_size: int = Query(24, ge=1, le=PAGE_SIZE_MAX),
+    ):
+        provider = provider_for(platform)
+        window, fetched = window_of(page, page_size, CREATOR_CONTENT_WINDOW)
+        result = provider.get_creator_content(creator_id, period=period, limit=fetched)
+        result = replace(result, notes=(CREATOR_VIDEOS_NOTE, *result.notes))
+        return video_page(result, page, page_size, window, fetched, "published_at", CREATOR_CONTENT_WINDOW)
 
     return app
 

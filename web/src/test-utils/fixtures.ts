@@ -4,6 +4,8 @@
  */
 import type {
   Capabilities,
+  CreatorPage,
+  CreatorRef,
   MetricValue,
   Readiness,
   Video,
@@ -58,6 +60,43 @@ export function video(overrides: Partial<Video> = {}): Video {
     origin: 'test',
     retrieved_at: '2026-11-07T10:00:00Z',
     ...overrides,
+  }
+}
+
+export function creator(overrides: Partial<CreatorRef> = {}): CreatorRef {
+  return {
+    id: 'UC0000000000000000000a',
+    platform: 'youtube',
+    name: 'Tiny AI Lab',
+    handle: '@tinyailab',
+    url: 'https://www.youtube.com/@tinyailab',
+    followers: raw(800),
+    content_count: raw(24),
+    ...overrides,
+  }
+}
+
+export function creatorsPage(
+  entries: { creator: CreatorRef; videos_in_result: number }[],
+  meta: Partial<CreatorPage['meta']> = {}
+): CreatorPage {
+  return {
+    data: entries,
+    meta: {
+      platform: 'youtube',
+      sort: null,
+      page: 1,
+      page_size: 24,
+      returned: entries.length,
+      has_more: false,
+      total: entries.length,
+      data_origin: 'test',
+      demo: true,
+      notes: [
+        'Creators are listed in the order of their most viewed video in the result; videos_in_result counts their videos among the discovered videos considered, not their whole channel.',
+      ],
+      ...meta,
+    },
   }
 }
 

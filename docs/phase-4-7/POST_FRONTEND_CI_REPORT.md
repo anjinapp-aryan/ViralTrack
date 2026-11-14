@@ -84,3 +84,38 @@ Line-ending note: the repository stores LF and `web/.prettierrc` requires LF, so
 - The D5 real-foundation integration tests never run on a hosted runner today. To run them under the network-isolated `discovery-offline` job, add `tests/test_api_d5.py` to its file list and give it a per-file minimum in `tests/support/ci_checks.py`. It changes the gate's expectations, so it is the owner's call.
 - Pull-request runs of the new job have not been observed (same caveat as before).
 - Frontend tests pull Chromium (about 110 MB) on every run; a cache of `~/.cache/ms-playwright` would save a minute and is not added to keep the job simple.
+
+## 6. Update 2026-11-14: hosted results and the repairs
+
+### What was pushed
+
+The owner pushed `c3adf7e` and the six Phase 2 documents together as `1cabc36`; `origin/main` is `1cabc36`. There was nothing left for the assistant to push.
+
+### Hosted CI on `1cabc36`: still RED (run `42399588182`, repeated as `42616034887`)
+
+| Job | Result | Cause |
+|---|---|---|
+| `discovery-offline` | success | |
+| `upstream-suite` | skipped (scheduled or manual only) | |
+| `viraltrack` | **failure** at "Check the lockfile is current" | a new `fastapi` release: the runner resolves `fastapi==0.162.2`, `requirements-dev.lock` pins `0.162.0` (the only differing line). The D5 test fix itself worked: the three tests are no longer the failure |
+| `web` | **failure** at "Install the test browser" | `ubuntu-latest` is now Ubuntu 26.04 and Playwright 1.59.1 supports Chromium up to Ubuntu 24.04 ("Playwright does not support chromium on ubuntu26.04-x64") |
+
+Neither failure is in the application code. The first is the lockfile check working as designed (it compares a fresh resolution with the lockfile, so any upstream release makes it fail until the lock is regenerated); the second is a runner image change.
+
+### Repairs (prepared, uncommitted; need the owner's approval to commit and push)
+
+1. `requirements-dev.lock` regenerated with the CI's own method (a fresh resolve into a new file; resolving into the existing file keeps the old pins). One line changes: `fastapi==0.162.0` to `0.162.2`. Verified: a fresh compile now matches it.
+2. `.github/workflows/ci.yml`: the `web` job runs on `ubuntu-24.04` with a comment saying to move it together with the Playwright version.
+3. Stage 3, the real-foundation environment: `tests/test_api_d5.py` (152 tests, 4 of them against the pinned foundation) and `tests/test_creators_2a.py` (86 tests, 2 of them against it) are added to the network-isolated `discovery-offline` job, with per-file minimums in `tests/support/ci_checks.py` (152 and 86).
+
+### Network-isolated real-foundation environment (already existed; now covers the API)
+
+`discovery-offline` is the environment asked for: a separate virtual environment holding the pinned foundation's requirements, a throwaway PostgreSQL service, synthetic seeded data, `YOUTUBE_*` and `NICHE_*` variables removed, `requests` replaced by a refusing guard, and the test user's outbound traffic blocked by firewall rules (loopback and the database allowed), with a JUnit gate that fails on any skip, xfail, missing file or shortfall below the minimums. Local run of that job's exact file list, with the database and the pinned foundation: **519 passed, 0 failed, 0 skipped, 0 xfailed**; gate passed. The foundation tests there run the foundation's real code, not mocks; the offline mock transport tests sit beside them.
+
+### Remaining steps for hosted verification (owner)
+
+1. Approve and push the repairs (lockfile, runner pin, job list and minimums).
+2. Expected on the next run: `viraltrack`, `web` and `discovery-offline` green (`upstream-suite` skipped). If `web` still fails, the log names the step; the browser dependency step is the first suspect.
+3. **Required check names** (job ids, as shown by `gh api repos/anjinapp-aryan/ViralTrack/commits/<sha>/check-runs`): `viraltrack`, `web`, `discovery-offline`. Do not require `upstream-suite`.
+4. **Branch protection** (repository Settings, Rules, Rulesets, New branch ruleset): target `main`, enable "Require status checks to pass", add the three names above (they appear in the picker only after they have run), add the owner as a bypass actor if direct pushes should continue. The exact steps and a `gh api` command are in [CI_REQUIRED_CHECK.md](CI_REQUIRED_CHECK.md). Nothing was changed in GitHub.
+5. Consider a scheduled or manual workflow that regenerates and proposes `requirements-dev.lock`: any upstream release turns the lockfile check red until someone regenerates it. That is a design choice of the existing check; it is not changed here.

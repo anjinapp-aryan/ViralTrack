@@ -54,3 +54,12 @@ All of 2A. It needs no persistence, no quota, no live call and no new dependency
 ## 6. Acceptance gate for the first milestone (2A)
 
 Defined in the architecture proposal, section 7. The milestone ends with a completion report and a stop; 2B to 2D start only on separate authorization.
+
+## 7. Status (2026-11-14)
+
+| Step | Status |
+|---|---|
+| 0, hosted CI recovery | **not complete.** `origin/main` (`1cabc36`) is still red for two causes found on 2026-11-14 (a lockfile drift and a runner image that Playwright does not support); repairs are prepared and uncommitted. See [POST_FRONTEND_CI_REPORT.md](POST_FRONTEND_CI_REPORT.md) |
+| 1 to 3 (2A provider, API, frontend) | **implemented and verified locally, uncommitted** |
+| 4 (2A review and report) | [PHASE_2A_IMPLEMENTATION_REPORT.md](PHASE_2A_IMPLEMENTATION_REPORT.md); waiting for approval; hosted verification pending |
+| 5 to 8 (D6, 2B, 2C, 2D) | not started; blocked as before |

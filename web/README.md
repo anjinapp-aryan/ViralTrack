@@ -1,6 +1,6 @@
 # ViralTrack web (frontend phase 1)
 
-A local-development web UI for ViralTrack. It shows the Discover page and a Data sources page, and it reads data only from the local ViralTrack API (D5). It has no accounts and no sign-in, and **it must not be exposed on a network**. Both servers bind to `127.0.0.1`.
+A local-development web UI for ViralTrack. It shows the Discover, Creators (list and detail) and Data sources pages, and it reads data only from the local ViralTrack API (D5). It has no accounts and no sign-in, and **it must not be exposed on a network**. Both servers bind to `127.0.0.1`.
 
 Adapted from [satnaing/shadcn-admin](https://github.com/satnaing/shadcn-admin) at commit `e16c87f213a5ba5e45964e9b67c792105ec74d26` (MIT, © 2024 Sat Naing; the licence is kept in [LICENSE](LICENSE)). The changes are listed in `docs/phase-4-7/FRONTEND_PHASE_1_REPORT.md`.
 

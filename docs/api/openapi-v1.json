@@ -133,7 +133,7 @@
             "type": "string"
           },
           "videos": {
-            "description": "not available: the provider has no per-creator video list",
+            "description": "always null here; a creator's videos are listed by /creators/{id}/videos",
             "title": "Videos",
             "type": "null"
           }
@@ -1364,6 +1364,141 @@
           }
         },
         "summary": "One creator already collected.",
+        "tags": [
+          "creators"
+        ]
+      }
+    },
+    "/api/v1/creators/{creator_id}/videos": {
+      "get": {
+        "operationId": "creator_videos_api_v1_creators__creator_id__videos_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "creator_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "title": "Creator Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "all, or 1-9999 hours (h) or days (d)",
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "description": "all, or 1-9999 hours (h) or days (d)",
+              "pattern": "^(all|[1-9][0-9]{0,3}[hd])$",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "youtube",
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "title": "Platform",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_Video_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unknown creator"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Invalid or unsupported request"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider answered with something unusable"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider timed out"
+          }
+        },
+        "summary": "A creator's newest collected videos (title, publication time and views), newest first.",
         "tags": [
           "creators"
         ]

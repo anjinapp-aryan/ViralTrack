@@ -311,6 +311,41 @@ def map_video(item: dict, ctx: MappingContext) -> Content:
     )
 
 
+# The fields of a /api/channels/{id}/velocity video that ViralTrack reads. Everything else in that payload is
+# ignored on purpose: vphLifetime, vph24h, viewsGained24h, acceleration and trend (rates and a classification;
+# the 24-hour ones are withheld by D3-05), isShort (RESTRICTED: the platform returns no Shorts flag), ageHours
+# and snapshots (bookkeeping). The payload carries no likes, comments, duration or thumbnail, so those stay
+# unknown.
+CREATOR_VIDEO_FIELDS = ("videoId", "title", "publishedAt", "views")
+
+
+def map_creator_video(item: dict, creator: Creator, ctx: MappingContext) -> Content:
+    """One element of `videos` in /api/channels/{id}/velocity, as a raw-only `Content`.
+
+    A malformed entry fails the whole response (the D3 rule); nothing is dropped silently and no unknown value
+    becomes a default. Only `CREATOR_VIDEO_FIELDS` are read, and only `views` becomes a metric."""
+    if not isinstance(item, dict):
+        raise ProviderError(PROVIDER_ID, f"creator video must be an object, got {type(item).__name__}")
+    video_id = item.get("videoId")
+    if not video_id or not isinstance(video_id, str):
+        raise ProviderError(PROVIDER_ID, "creator video without a text videoId")
+    _check_ids(ctx, video_id, creator.creator_id)
+    raw = raw_provenance(ctx, None)       # the foundation reports no read time for these values
+    return Content(
+        platform=Platform.YOUTUBE,
+        content_id=video_id,
+        content_type=ContentType.VIDEO,
+        url=f"https://www.youtube.com/watch?v={video_id}",
+        creator=creator,
+        origin=ctx.origin,
+        title=_text(item, "title"),
+        published_at=published_time(item.get("publishedAt")),
+        metrics=_raw(item, {"views": "views"}, raw),
+        retrieved_at=ctx.retrieved_at,
+        provider=PROVIDER_ID,
+    )
+
+
 def map_channel(body: dict, ctx: MappingContext) -> Creator:
     """/api/channels/{channel_id}"""
     channel_id = body.get("channelId")

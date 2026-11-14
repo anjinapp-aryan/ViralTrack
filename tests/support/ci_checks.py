@@ -33,6 +33,10 @@ EXPECTED_MINIMUM = {
     "tests/test_discovery_d1_policy.py": 32,
     "tests/test_collect_period.py": 119,
     "tests/test_collect_period_upstream.py": 35,
+    # D5 API: includes the four real-foundation tests (the pinned foundation code on the job's database)
+    "tests/test_api_d5.py": 152,
+    # Phase 2A creators: provider mapping, ordering and API contract, plus two real-foundation tests
+    "tests/test_creators_2a.py": 86,
 }
 
 # The strict xfail tests that document known defects (D1 closure report, section 3). The job requires

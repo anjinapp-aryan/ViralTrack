@@ -15,6 +15,8 @@ import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSourcesRouteImport } from './routes/_app/sources'
+import { Route as AppCreatorsIndexRouteImport } from './routes/_app/creators/index'
+import { Route as AppCreatorsCreatorIdRouteImport } from './routes/_app/creators/$creatorId'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -45,6 +47,16 @@ const AppSourcesRoute = AppSourcesRouteImport.update({
   path: '/sources',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppCreatorsIndexRoute = AppCreatorsIndexRouteImport.update({
+  id: '/creators/',
+  path: '/creators/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppCreatorsCreatorIdRoute = AppCreatorsCreatorIdRouteImport.update({
+  id: '/creators/$creatorId',
+  path: '/creators/$creatorId',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -52,6 +64,8 @@ export interface FileRoutesByFullPath {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/sources': typeof AppSourcesRoute
+  '/creators/$creatorId': typeof AppCreatorsCreatorIdRoute
+  '/creators/': typeof AppCreatorsIndexRoute
 }
 export interface FileRoutesByTo {
   '/404': typeof errors404Route
@@ -59,6 +73,8 @@ export interface FileRoutesByTo {
   '/503': typeof errors503Route
   '/sources': typeof AppSourcesRoute
   '/': typeof AppIndexRoute
+  '/creators/$creatorId': typeof AppCreatorsCreatorIdRoute
+  '/creators': typeof AppCreatorsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +84,28 @@ export interface FileRoutesById {
   '/(errors)/503': typeof errors503Route
   '/_app/sources': typeof AppSourcesRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/creators/$creatorId': typeof AppCreatorsCreatorIdRoute
+  '/_app/creators/': typeof AppCreatorsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/404' | '/500' | '/503' | '/sources'
+  fullPaths:
+    | '/'
+    | '/404'
+    | '/500'
+    | '/503'
+    | '/sources'
+    | '/creators/$creatorId'
+    | '/creators/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/404' | '/500' | '/503' | '/sources' | '/'
+  to:
+    | '/404'
+    | '/500'
+    | '/503'
+    | '/sources'
+    | '/'
+    | '/creators/$creatorId'
+    | '/creators'
   id:
     | '__root__'
     | '/_app'
@@ -82,6 +114,8 @@ export interface FileRouteTypes {
     | '/(errors)/503'
     | '/_app/sources'
     | '/_app/'
+    | '/_app/creators/$creatorId'
+    | '/_app/creators/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -135,17 +169,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSourcesRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/creators/': {
+      id: '/_app/creators/'
+      path: '/creators'
+      fullPath: '/creators/'
+      preLoaderRoute: typeof AppCreatorsIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/creators/$creatorId': {
+      id: '/_app/creators/$creatorId'
+      path: '/creators/$creatorId'
+      fullPath: '/creators/$creatorId'
+      preLoaderRoute: typeof AppCreatorsCreatorIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
 interface AppRouteRouteChildren {
   AppSourcesRoute: typeof AppSourcesRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppCreatorsCreatorIdRoute: typeof AppCreatorsCreatorIdRoute
+  AppCreatorsIndexRoute: typeof AppCreatorsIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSourcesRoute: AppSourcesRoute,
   AppIndexRoute: AppIndexRoute,
+  AppCreatorsCreatorIdRoute: AppCreatorsCreatorIdRoute,
+  AppCreatorsIndexRoute: AppCreatorsIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(

@@ -114,6 +114,10 @@ class PlatformProvider(ABC):
     def get_creator_history(self, creator_id: str) -> list[CreatorSnapshot]:
         self._unsupported(Capability.CREATOR_HISTORY)
 
+    def get_creator_content(self, creator_id: str, period: str = "all", limit: int = 24) -> ContentPage:
+        """One creator's collected items, newest first (by publication time, applied by ViralTrack)."""
+        self._unsupported(Capability.CREATOR_CONTENT)
+
     def get_trending_content(self, region: str | None = None) -> ContentPage:
         self._unsupported(Capability.GLOBAL_TRENDING)
 

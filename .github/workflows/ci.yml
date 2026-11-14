@@ -74,7 +74,10 @@ jobs:
   # The local-development web UI (web/). It needs no database, no foundation and no network service: the
   # tests answer every API call with synthetic responses, and nothing here can reach YouTube.
   web:
-    runs-on: ubuntu-latest
+    # Pinned: Playwright 1.59 supports Chromium on Ubuntu up to 24.04, and `ubuntu-latest` is now 26.04
+    # (hosted run 42399588182: "Playwright does not support chromium on ubuntu26.04-x64"). Move this with the
+    # Playwright version in web/package.json, not with the runner label.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -308,7 +311,8 @@ jobs:
             "VT_TEST_EXPECT_UID=$VT_UID" "VT_TEST_EXPECT_GID=$VT_GID" \
             /tmp/vt-venv/bin/pytest -p no:cacheprovider -rfEX --junitxml=/tmp/vt-offline/report.xml \
             tests/test_discovery_d1_adapter.py tests/test_discovery_d1_upstream.py \
-            tests/test_discovery_d1_policy.py tests/test_collect_period.py tests/test_collect_period_upstream.py
+            tests/test_discovery_d1_policy.py tests/test_collect_period.py tests/test_collect_period_upstream.py \
+            tests/test_api_d5.py tests/test_creators_2a.py
           status=$?
           end=$(date +%s)
           echo "test_seconds=$((end - start))" | tee -a "$GITHUB_STEP_SUMMARY"

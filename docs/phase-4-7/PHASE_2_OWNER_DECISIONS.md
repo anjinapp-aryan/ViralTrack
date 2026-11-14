@@ -37,3 +37,23 @@ Date: 2026-11-07. Nothing below is assumed approved. Companions: [PHASE_2_ARCHIT
 - **Adapt:** the creator profile mapping (three more raw fields) and the per-creator video list (four raw fields, local order).
 - **Genuinely build (small):** the raw-only video mapping and its tests, the creator pages, later an alert allow-list.
 - **Blocked:** history, watchlist, alerts, any scoring; D6 and D7 are not authorized; live data is not touched.
+
+## 4. Status after the 2026-11-14 work
+
+| # | Decision | Status |
+|---|---|---|
+| 1 | push `c3adf7e` | done by the owner (as `1cabc36`); hosted CI is red for two new causes, see below |
+| 2 | `web` as a required check | blocked until `web` is green; check names in the CI report |
+| 3 | D5 real-foundation tests in the network-isolated job | **prepared** (job list and minimums), uncommitted |
+| 4 | authorize 2A | given; 2A implemented, uncommitted |
+| 5 | creator video source (velocity route, raw fields, local order) | given in the task; implemented |
+| 6 | extra profile fields `country`, `created_at`, `total_views` | **not approved: omitted.** Reply "approve decision 6" to add them (a small change) |
+| 7 to 12 | D6, change-between-snapshots, watchlist writes, alerts, D7, counsel | unchanged, still open |
+
+New decisions needed:
+
+| # | Decision | Recommendation |
+|---|---|---|
+| 13 | Approve committing and pushing the CI repairs (lockfile `fastapi==0.162.2`, `web` on `ubuntu-24.04`, job list and minimums), so hosted CI can go green | Yes; this unblocks everything |
+| 14 | Approve committing 2A (backend, frontend, regenerated contract, tests, docs, four screenshots) as a separate commit after hosted CI is green | Yes, after 13 |
+| 15 | A routine for the lockfile check: any upstream release turns it red until the lock is regenerated (a scheduled job that opens a pull request, or accept manual regeneration) | Accept manual regeneration for now; mention it in the README |

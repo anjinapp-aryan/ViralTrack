@@ -128,6 +128,9 @@ describe('SearchProvider and CommandMenu', () => {
     await expect
       .element(screen.getByRole('option', { name: 'Data sources' }))
       .toBeInTheDocument()
+    await expect
+      .element(screen.getByRole('option', { name: 'Creators' }))
+      .toBeInTheDocument()
     for (const removed of ['Tasks', 'Users', 'Chats', 'Apps', 'Sign In']) {
       await expect
         .element(screen.getByRole('option', { name: removed }))

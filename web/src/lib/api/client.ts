@@ -19,6 +19,14 @@ export type Readiness = Schemas['HealthOut']
 export type DiscoverParams = NonNullable<
   paths['/api/v1/discover']['get']['parameters']['query']
 >
+export type CreatorRef = Schemas['CreatorRef']
+export type CreatorPage = Schemas['Page_CreatorSummary_']
+export type CreatorsParams = NonNullable<
+  paths['/api/v1/creators']['get']['parameters']['query']
+>
+export type CreatorVideosParams = NonNullable<
+  paths['/api/v1/creators/{creator_id}/videos']['get']['parameters']['query']
+>
 
 // `fetch` is looked up on every request (not captured once), so the page always uses the current one.
 export const api = createClient<paths>({

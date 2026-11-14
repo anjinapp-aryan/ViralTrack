@@ -37,3 +37,24 @@ Nothing here is a significant BUILD in the sense of the reuse policy; each item 
 ## 4. Dependencies that would be added
 
 Phase 2A (creators, no history): none. Phase 2B (history chart): `recharts` (MIT; about 11 direct dependencies; lazy-loaded on the creator page only), installed through the shadcn chart component. The licence scan and `pnpm audit` of the installed tree are part of that step, as in frontend phase 1.
+
+## 5. Phase 2A refresh (2026-11-14)
+
+A week later the search was repeated and the decisions re-checked before implementation.
+
+- **Ready-made trackers:** `gh search repos` for "youtube channel growth tracker" returned the same three tiny repositories (0 to 3 stars, no licence declared, one pushed 2025-08); "youtube creator analytics dashboard open source" and "youtube channel statistics api python" returned nothing. Still no usable code.
+- **Foundation:** `pandich93/youtube-niche-finder`, MIT (file read), pushed 2026-11-13, 33 stars, not archived. The submodule stays at `d872014`; moving the pin is a separate decision.
+- **Decisions for the implemented part (2A):**
+
+| Capability | Decision | Note |
+|---|---|---|
+| Creator listing | REUSE | the D5 endpoint over discovery |
+| Creator profile | REUSE | the D5 endpoint; the three extra fields were not approved and are omitted |
+| Creator videos | ADAPT | the foundation's velocity route, four raw fields, ViralTrack order |
+| History, watchlist, alerts, scheduler, notifications | REUSE later, not touched | D6 and policy gates |
+| Creator pages | COMPOSE | existing shadcn components and the Discover cards, quick view, pager, header and states |
+| API types and client | REUSE | regenerated, nothing hand-written |
+| Chart library (history) | DEFER | not needed until 2B |
+| Raw-only mapping, local ordering, the two pages | BUILD (small) | no existing code carries the metric policy |
+
+- **Dependencies added:** none, Python or web.

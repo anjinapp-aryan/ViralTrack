@@ -118,7 +118,7 @@ class CreatorDetail(_Strict):
     origin: OriginName
     demo: bool
     videos: None = Field(
-        default=None, description="not available: the provider has no per-creator video list"
+        default=None, description="always null here; a creator's videos are listed by /creators/{id}/videos"
     )
     notes: list[str]
 

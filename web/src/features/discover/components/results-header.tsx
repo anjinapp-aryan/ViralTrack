@@ -14,9 +14,12 @@ const ORDER_LABELS: Record<string, string> = {
 export function ResultsHeader({
   meta,
   items,
+  noun = 'videos',
 }: {
   meta: PageMeta
   items: Video[]
+  /** what is counted: videos on Discover, creators on the Creators page */
+  noun?: string
 }) {
   const start = (meta.page - 1) * meta.page_size + 1
   const end = start + meta.returned - 1
@@ -29,10 +32,10 @@ export function ResultsHeader({
             {meta.total != null ? (
               <>
                 <span className='tabular-nums'>{fullNumber(meta.total)}</span>{' '}
-                videos
+                {noun}
               </>
             ) : (
-              'Videos'
+              <span className='capitalize'>{noun}</span>
             )}
           </p>
           {meta.returned > 0 && (
@@ -47,12 +50,14 @@ export function ResultsHeader({
         </div>
         <div className='flex flex-wrap items-center gap-2 text-xs text-muted-foreground'>
           {meta.sort && (
-            <span className='inline-flex items-center gap-1'>
-              <ArrowDownWideNarrow aria-hidden className='size-3.5' />
-              {ORDER_LABELS[meta.sort] ?? meta.sort}
-            </span>
+            <>
+              <span className='inline-flex items-center gap-1'>
+                <ArrowDownWideNarrow aria-hidden className='size-3.5' />
+                {ORDER_LABELS[meta.sort] ?? meta.sort}
+              </span>
+              <span aria-hidden>·</span>
+            </>
           )}
-          <span aria-hidden>·</span>
           <span>
             YouTube via the local foundation
             {retrieved ? `, retrieved ${relativeTime(retrieved)}` : ''}

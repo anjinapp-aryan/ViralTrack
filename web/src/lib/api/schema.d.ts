@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/creators/{creator_id}/videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A creator's newest collected videos (title, publication time and views), newest first. */
+        get: operations["creator_videos_api_v1_creators__creator_id__videos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/discover": {
         parameters: {
             query?: never;
@@ -180,7 +197,7 @@ export interface components {
             origin: "real_provider_data" | "demo" | "test";
             /**
              * Videos
-             * @description not available: the provider has no per-creator video list
+             * @description always null here; a creator's videos are listed by /creators/{id}/videos
              */
             videos?: null;
         };
@@ -597,6 +614,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Item_CreatorDetail_"];
+                };
+            };
+            /** @description Unknown creator */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Invalid or unsupported request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider answered with something unusable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider timed out */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    creator_videos_api_v1_creators__creator_id__videos_get: {
+        parameters: {
+            query?: {
+                /** @description all, or 1-9999 hours (h) or days (d) */
+                period?: string;
+                platform?: "youtube" | "instagram" | "tiktok";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                creator_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_Video_"];
                 };
             };
             /** @description Unknown creator */

@@ -284,10 +284,10 @@ def test_creators_lists_the_distinct_creators_of_the_discovered_videos():
     assert any("not their whole channel" in n for n in body["meta"]["notes"])
 
 
-def test_creator_detail_returns_identity_and_says_videos_are_unavailable():
+def test_creator_detail_returns_identity_and_points_to_the_videos_endpoint():
     body = client().get(f"/api/v1/creators/{CHANNEL}").json()["data"]
     assert body["creator"]["id"] == CHANNEL and body["creator"]["platform"] == "youtube"
-    assert body["videos"] is None and "not available" in body["notes"][0]
+    assert body["videos"] is None and "/api/v1/creators/{creator_id}/videos" in body["notes"][0]
     assert body["creator"]["followers"]["kind"] == "raw"
 
 
@@ -399,6 +399,7 @@ def test_only_get_is_routed_and_no_ingestion_route_exists():
         "/api/v1/search",
         "/api/v1/creators",
         "/api/v1/creators/{creator_id}",
+        "/api/v1/creators/{creator_id}/videos",
     }
     assert all(m <= {"GET", "HEAD"} for m in api.values())
     assert client().post("/api/v1/discover").status_code == 405
@@ -768,6 +769,7 @@ def test_openapi_documents_every_endpoint_with_errors(openapi):
         "/api/v1/search",
         "/api/v1/creators",
         "/api/v1/creators/{creator_id}",
+        "/api/v1/creators/{creator_id}/videos",
     }
     for p in ("/api/v1/discover", "/api/v1/search", "/api/v1/creators", "/api/v1/creators/{creator_id}"):
         responses = paths[p]["get"]["responses"]

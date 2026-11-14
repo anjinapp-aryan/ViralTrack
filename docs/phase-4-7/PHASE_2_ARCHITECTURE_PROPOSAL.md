@@ -95,3 +95,12 @@ No outlier, viral, views-per-subscriber, RPM, projection, momentum, grade, YPP, 
 ### Acceptance
 
 Only allowed raw fields reach any response or screen; nothing is shown as 0 that was not reported; provenance and DEMO labels present; no new dependency; no persistence; no ranking or performance wording; hosted CI green.
+
+## 8. Status (2026-11-14)
+
+Phase 2A is implemented as described in sections 3 and 7, with two deliberate differences from the proposal:
+
+- The three extra profile fields (`country`, `created_at`, `total_views`) are **not** included, because decision 6 was a recommendation and was not approved.
+- The per-creator video window is at most 200 videos (the proposal left the bound open).
+
+Results, evidence and limits: [PHASE_2A_IMPLEMENTATION_REPORT.md](PHASE_2A_IMPLEMENTATION_REPORT.md). Sections 4 (history), 4.3 (watchlist) and 4.4 (alerts) are unchanged and remain blocked.

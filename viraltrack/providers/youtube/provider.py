@@ -71,6 +71,9 @@ _REFUSED_SORTS = {
     "engagement_rate": "the foundation counts a hidden like count as zero when it orders by this rate, so a "
                        "video with hidden likes is placed by an understated value that ViralTrack omits",
 }
+# A creator's video list is one window of at most this many videos: the foundation computes each video's rates
+# one query at a time and has no offset or cap, so ViralTrack bounds it.
+CREATOR_CONTENT_WINDOW = 200
 # The most subscribers a discovery query may allow a channel to have: a bounded limit, never "no limit".
 MAX_CREATOR_FOLLOWERS = 1_000_000
 
@@ -84,6 +87,10 @@ CAPABILITIES = PlatformCapabilities({
         False, "niche-finder exposes no single-video read endpoint"),
     Capability.GET_CREATOR: CapabilityInfo(
         True, "Channels already collected (niche-finder /api/channels/{id})"),
+    Capability.CREATOR_CONTENT: CapabilityInfo(
+        True, "A channel's newest collected videos (niche-finder /api/channels/{id}/velocity): title, "
+              "publication time and views only, ordered by ViralTrack; no likes, comments, length or "
+              "thumbnail; at most 200 videos"),
     Capability.CREATOR_HISTORY: CapabilityInfo(
         True, "Stored channel snapshots; limited by the retention policy"),
     Capability.GLOBAL_TRENDING: CapabilityInfo(
@@ -139,6 +146,10 @@ def _path_id(value: str) -> str:
     """An id placed in a URL path: non-empty and fully percent-encoded (no '/', '..')."""
     if not value or not value.strip():
         raise ValueError("id must not be empty")
+    if value.strip() in (".", ".."):
+        # `quote` leaves dots alone and an HTTP client resolves a "." or ".." segment, so "/api/channels/.."
+        # would be sent as "/api": a different route
+        raise ValueError("id must not be a dot segment")
     return quote(value, safe="")
 
 
@@ -273,6 +284,38 @@ class YouTubeProvider(PlatformProvider):
         if query.text and _no_topic_data(body):
             page = replace(page, notes=(*page.notes, NO_TOPIC_DATA_NOTE))
         return page
+
+    def get_creator_content(self, creator_id: str, period: str = "all", limit: int = 24) -> ContentPage:
+        """A creator's newest collected videos, raw fields only, ordered by publication time by ViralTrack.
+
+        The foundation's list is selected newest-first but then ordered by the 24-hour view rate, which is
+        withheld (D3-05), so its order is never used: items are sorted here by `published_at`, newest first,
+        then by id, and undated items come last. An unknown creator is NotFound (the foundation answers an
+        empty list with 200 for any id, which would be indistinguishable from "no videos"). Only the fields in
+        `mapping.CREATOR_VIDEO_FIELDS` are read; the foundation's own note is not passed on."""
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= CREATOR_CONTENT_WINDOW:
+            raise ValueError(
+                f"limit must be a whole number from 1 to {CREATOR_CONTENT_WINDOW}, got {limit!r}")
+        period = _check_period(period)
+        creator = self.get_creator(creator_id)          # NotFound if it was never collected; validates the id
+        body = self._client.get(f"/api/channels/{_path_id(creator_id)}/velocity",
+                                {"period": period, "limit": limit})
+        videos = body.get("videos")
+        if not isinstance(videos, list):
+            raise ProviderError(PROVIDER_ID, "creator videos response has no videos list")
+        ctx = self._ctx()
+        mapped = []
+        for index, entry in enumerate(videos):
+            try:
+                mapped.append(mapping.map_creator_video(entry, creator, ctx))
+            except ProviderError as exc:
+                raise ProviderError(PROVIDER_ID, f"videos[{index}] is invalid: {exc.args[-1]}") from exc
+        mapped.sort(key=lambda c: (c.published_at is None,
+                                   -c.published_at.timestamp() if c.published_at else 0.0, c.content_id))
+        items, notes = _first_of_each(mapped)
+        # Fewer than asked for: the list is complete for the period. Otherwise there may be more.
+        total = len(items) if len(videos) < limit else None
+        return ContentPage(items=items, total=total, notes=notes)
 
     def check_ready(self) -> bool:
         """The foundation's GET /api/health (free, read-only, no quota) answered with ok=true."""

@@ -16,6 +16,7 @@ class Capability(str, Enum):
     GET_CONTENT = "get_content"                # one item by id
     GET_CREATOR = "get_creator"
     CREATOR_HISTORY = "creator_history"        # stored snapshots of creator metrics
+    CREATOR_CONTENT = "creator_content"        # one creator's collected items, newest first
     GLOBAL_TRENDING = "global_trending"        # platform-wide "trending now" feed
     SHORT_FORM = "short_form"                  # Shorts / Reels classification
     ENGAGEMENT_METRICS = "engagement_metrics"  # likes / comments

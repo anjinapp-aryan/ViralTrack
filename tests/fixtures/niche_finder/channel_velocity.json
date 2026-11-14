@@ -1,0 +1,12 @@
+{
+  "channelId": "UC0000000000000000000f",
+  "period": "all",
+  "videos": [
+    {"videoId": "fvid029", "title": "Meal prep for a week in 20 minutes", "publishedAt": "2026-10-31T17:56:33.271206+00:00", "ageHours": 168.5, "views": 69222, "isShort": false, "vphLifetime": 410.7, "vph24h": 115.4, "viewsGained24h": 2769, "acceleration": 0.67, "trend": "cooling", "snapshots": 3, "outlierScore": 9.9, "viralScore": 12.5, "viewsPerSubscriber": 4.6, "estimatedRpm": 4.2},
+    {"videoId": "fvid006", "title": "3 ingredient dinner that actually works", "publishedAt": "2026-11-02T21:28:33.713289+00:00", "ageHours": 117.0, "views": 52228, "isShort": true, "vphLifetime": 446.4, "vph24h": 87.1, "viewsGained24h": 2090, "acceleration": 0.67, "trend": "cooling", "snapshots": 3},
+    {"videoId": "fvid032", "title": "Pasta trick chefs hide", "publishedAt": "2026-11-06T04:16:00.331865+00:00", "ageHours": 38.2, "views": 35383, "isShort": true, "vphLifetime": 926.1, "vph24h": 59.0, "viewsGained24h": 1416, "acceleration": 1.0, "trend": "steady", "snapshots": 2},
+    {"videoId": "fvid040", "title": "Undated upload", "publishedAt": null, "ageHours": 0, "views": 1200, "isShort": false, "vphLifetime": 1200.0, "vph24h": 40.0, "viewsGained24h": 960, "acceleration": 1.0, "trend": "steady", "snapshots": 2},
+    {"videoId": "fvid011", "title": "Hidden numbers", "publishedAt": "2026-09-01T10:00:00+00:00", "ageHours": 1500.0, "views": null, "isShort": false, "vphLifetime": null, "vph24h": null, "viewsGained24h": null, "acceleration": 1.0, "trend": "steady", "snapshots": 1}
+  ],
+  "note": "vph24h/acceleration need at least two snapshots ~24h apart"
+}
