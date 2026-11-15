@@ -39,11 +39,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      # requirements-dev.lock is `uv pip compile` output; recompiling must change
-      # nothing but comments (same check the foundation runs on its lockfile).
-      - name: Check the lockfile is current
+      # requirements-dev.lock is `uv pip compile` output. The check verifies the COMMITTED lock: it is copied to
+      # the output path first, so uv keeps its pins as preferences, and the recompile must change nothing but
+      # comments. It fails when pyproject.toml and the lock disagree (a dependency added, removed or re-bounded,
+      # or a hand edit), and never just because a newer release appeared on PyPI (that made CI red twice:
+      # fastapi 0.162.2 on 2026-11-07, annotated-doc 0.0.6 on 2026-11-14). Upgrades are a deliberate regeneration.
+      - name: Check the lockfile matches pyproject.toml
         run: |
           pip install uv==0.12.15
+          cp requirements-dev.lock /tmp/lock
           uv pip compile -q pyproject.toml --extra dev --universal --python-version 3.10 -o /tmp/lock
           diff <(grep -v '^#' requirements-dev.lock) <(grep -v '^#' /tmp/lock)
 

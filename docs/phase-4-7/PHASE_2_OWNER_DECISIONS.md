@@ -57,3 +57,11 @@ New decisions needed:
 | 13 | Approve committing and pushing the CI repairs (lockfile `fastapi==0.162.2`, `web` on `ubuntu-24.04`, job list and minimums), so hosted CI can go green | Yes; this unblocks everything |
 | 14 | Approve committing 2A (backend, frontend, regenerated contract, tests, docs, four screenshots) as a separate commit after hosted CI is green | Yes, after 13 |
 | 15 | A routine for the lockfile check: any upstream release turns it red until the lock is regenerated (a scheduled job that opens a pull request, or accept manual regeneration) | Accept manual regeneration for now; mention it in the README |
+
+## 5. Status after the 2026-11-15 work
+
+| # | Decision | Status |
+|---|---|---|
+| 13, 14 | commit and push the CI repairs, then 2A, separately | the owner pushed both together as `3845589`; history left as it is; follow-up repairs in one new commit (see `POST_FRONTEND_CI_REPORT.md` section 7) |
+| 15 | lockfile routine | **resolved without a new routine:** the check now verifies the committed lock against `pyproject.toml` and no longer fails on a new PyPI release; upgrades are a deliberate regeneration |
+| 6, 7 to 12 | extra profile fields, D6, snapshots, watchlist writes, alerts, D7, counsel | unchanged, still open |

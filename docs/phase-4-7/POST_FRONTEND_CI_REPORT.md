@@ -119,3 +119,41 @@ Neither failure is in the application code. The first is the lockfile check work
 3. **Required check names** (job ids, as shown by `gh api repos/anjinapp-aryan/ViralTrack/commits/<sha>/check-runs`): `viraltrack`, `web`, `discovery-offline`. Do not require `upstream-suite`.
 4. **Branch protection** (repository Settings, Rules, Rulesets, New branch ruleset): target `main`, enable "Require status checks to pass", add the three names above (they appear in the picker only after they have run), add the owner as a bypass actor if direct pushes should continue. The exact steps and a `gh api` command are in [CI_REQUIRED_CHECK.md](CI_REQUIRED_CHECK.md). Nothing was changed in GitHub.
 5. Consider a scheduled or manual workflow that regenerates and proposes `requirements-dev.lock`: any upstream release turns the lockfile check red until someone regenerates it. That is a design choice of the existing check; it is not changed here.
+
+## 7. Update 2026-11-15: hosted run on `3845589`, two more causes, repairs
+
+### What was pushed
+
+The owner committed the CI repairs of section 6 and Phase 2A together as `3845589` ("fixing issues") and pushed it; `origin/main` is `3845589`. The plan had been two separate commits. The history is left as it is (no rewrite); the further repairs below are one new commit on top.
+
+### Hosted CI on `3845589`: RED (run `43619693337`)
+
+| Job | Result | Cause |
+|---|---|---|
+| `web` | **success** | the `ubuntu-24.04` pin worked |
+| `upstream-suite` | skipped (scheduled or manual only) | |
+| `viraltrack` | **failure** at "Check the lockfile is current" | another new release: `annotated-doc 0.0.6` (lock: `0.0.5`) |
+| `discovery-offline` | **failure**: 518 passed, 1 failed; the gate failed on that test | `test_integration_search_creators_and_detail_on_the_real_foundation`: the foundation answered 400, ViralTrack 502 |
+
+### Root causes
+
+1. **Lockfile check design.** The check compiled a fresh resolution and compared it with the lock, so every upstream release made CI red until someone regenerated the lock (twice in a week). It verified freshness, not the committed lock.
+2. **A machine-dependent foundation test.** A search with a query makes the foundation embed the query text with a local model (`fastembed`, `paraphrase-multilingual-MiniLM-L12-v2`) that is downloaded on first use. The isolated job is offline (`HF_HUB_OFFLINE=1`, firewall), so the model cannot load and the route answers 400. Locally the test passed only because the model was already cached in the user's temporary folder. The test had never run on a hosted runner before (section 6 added `test_api_d5.py` to the job). Reproduced locally with an empty model cache and `HF_HUB_OFFLINE=1`: same failure.
+
+### Repairs (one commit on top of `3845589`)
+
+1. **Lockfile check** (`viraltrack` job, renamed "Check the lockfile matches pyproject.toml"): the committed lock is copied to the output path before `uv pip compile`, so uv keeps its pins as preferences, and the diff must be empty. Verified locally with uv 0.12.15 (the CI version): the committed lock passes; a fresh resolve would differ (`annotated-doc 0.0.6`), so the old check would still fail; a pin outside the `pyproject.toml` bounds is rewritten (fails); a dependency added to `pyproject.toml` appears (fails); a consistent hand-set older pin is kept (passes, as it is a valid lock). Upgrades are now a deliberate regeneration, not a side effect of a PyPI release. This answers owner decision 15.
+2. **Foundation runner** (`tests/support/upstream_runner.py`, test support only): `fastembed_provider.embed` is replaced by a fixed unit vector, and the model loader is disabled so any other path fails loudly instead of downloading. The collect runner already did the same. The seeded corpus stores no video embeddings, so the foundation's similarity value is null either way and the response is what the real model would produce. The upstream code is not modified. Verified: the 6 real-foundation API tests pass with an empty model cache and nothing is written to it.
+3. **Adversarial creator ids** (provider `_path_id` and tests): ids longer than 128 characters and ids with control characters (Unicode category Cc, including NUL, CR, LF, tab, DEL and C1) are refused before any request. Tests cover the creator detail, videos and history calls, and, at API level, both creator endpoints with encoded dot segments, encoded slashes and backslashes, NUL, CR/LF header-injection attempts, and over-long ids: refused with 404 or 422 and no request reaches the foundation. Literal backslashes, look-alike slashes, full-width dots and `%2E%2E` text stay one literal, once-encoded path segment. The minimum for `tests/test_creators_2a.py` in the gate is raised from 86 to 167.
+
+No dependency was added. Nothing else in the workflow changed; no check was removed or relaxed.
+
+### Local verification of the repairs (Windows, empty model cache, `HF_HUB_OFFLINE=1`)
+
+| Check | Result |
+|---|---|
+| The isolated job's exact file list, with PostgreSQL 16 + pgvector and the pinned foundation, then the gate | 600 passed, 0 failed, 0 skipped, 0 xfailed; gate passed (`test_api_d5.py` 152, `test_creators_2a.py` 167); the empty model cache stayed empty |
+| Full suite with the database and the foundation | 1266 collected: 1261 passed, 5 skipped (3 POSIX-only on Windows, 2 live-foundation smoke tests without `VT_TEST_FOUNDATION_URL`), 0 failed |
+| Full suite offline | 1123 passed, 143 skipped (database, foundation, POSIX), 0 failed |
+| Ruff, `pip check`, OpenAPI snapshot | clean; unchanged |
+| Submodule | `d872014` |

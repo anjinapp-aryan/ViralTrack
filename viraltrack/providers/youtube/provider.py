@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
@@ -142,6 +143,9 @@ def _check_collect_period(period: str | None) -> str | None:
     return None if period == "all" else period
 
 
+PATH_ID_MAX_LENGTH = 128  # platform ids are far shorter (YouTube: 11 for a video, 24 for a channel)
+
+
 def _path_id(value: str) -> str:
     """An id placed in a URL path: non-empty and fully percent-encoded (no '/', '..')."""
     if not value or not value.strip():
@@ -150,6 +154,10 @@ def _path_id(value: str) -> str:
         # `quote` leaves dots alone and an HTTP client resolves a "." or ".." segment, so "/api/channels/.."
         # would be sent as "/api": a different route
         raise ValueError("id must not be a dot segment")
+    if len(value) > PATH_ID_MAX_LENGTH:
+        raise ValueError("id is too long")
+    if any(unicodedata.category(ch) == "Cc" for ch in value):
+        raise ValueError("id must not contain control characters")
     return quote(value, safe="")
 
 

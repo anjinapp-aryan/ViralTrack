@@ -8,6 +8,7 @@ The real-foundation tests at the end run the pinned foundation code on PostgreSQ
 """
 
 from datetime import timezone
+from urllib.parse import unquote
 
 import httpx
 import pytest
@@ -222,6 +223,83 @@ def test_a_creator_id_is_percent_encoded_into_exactly_one_path_segment(creator):
         provider(rec).get_creator_content(creator)
     raw = rec.requests[0].url.raw_path.decode()
     assert raw.startswith("/api/channels/") and raw.count("/") == 3 and "?" not in raw and "#" not in raw
+
+
+# Adversarial ids. The provider is the last line of defence: the API's id pattern blocks all of these
+# already, but other callers (scripts, a future route) reach the provider directly.
+PROVIDER_ID_CALLS = {
+    "detail": lambda p, cid: p.get_creator(cid),
+    "videos": lambda p, cid: p.get_creator_content(cid),
+    "history": lambda p, cid: p.get_creator_history(cid),
+}
+
+
+@pytest.mark.parametrize("call", sorted(PROVIDER_ID_CALLS))
+@pytest.mark.parametrize(
+    "creator",
+    ["a\x00b", "a\nb", "a\rb", "a\tb", "\x1b[0m", "a\x7fb", "a\x85b", "a" * 129, "." * 200],
+    ids=["nul", "lf", "cr", "tab", "escape", "del", "c1-next-line", "129-chars", "200-dots"],
+)
+def test_a_control_character_or_overlong_creator_id_is_refused_before_any_request(call, creator):
+    rec = Recorder(ROUTES)
+    with pytest.raises(ValueError):
+        PROVIDER_ID_CALLS[call](provider(rec), creator)
+    assert rec.requests == []
+
+
+@pytest.mark.parametrize("call", sorted(PROVIDER_ID_CALLS))
+@pytest.mark.parametrize(
+    "creator",
+    [
+        "%2E%2E",  # encoded dot segment: must stay literal text, never decoded into ".."
+        "%2e%2e%2fapi",
+        "..%2F..%2Fapi",
+        "a%5Cb",
+        "a\\b",  # backslash: some servers treat it as a separator
+        "..\\..\\api",
+        "∕api",  # division slash, a look-alike separator
+        "．．",  # full-width dots
+        "a;b",
+        "a" * 128,  # the longest accepted id
+    ],
+)
+def test_an_adversarial_creator_id_stays_one_literal_path_segment(call, creator):
+    rec = Recorder(ROUTES)
+    with pytest.raises(NotFound):
+        PROVIDER_ID_CALLS[call](provider(rec), creator)
+    (request,) = rec.requests
+    raw = request.url.raw_path.decode("ascii")
+    segment = raw.removeprefix("/api/channels/").removesuffix("/history").removesuffix("/velocity")
+    assert raw.startswith("/api/channels/") and "/" not in segment and "\\" not in raw
+    assert unquote(segment) == creator  # exactly the id, encoded once; nothing resolved or decoded on the way
+
+
+@pytest.mark.parametrize("endpoint", ["/api/v1/creators/{}", "/api/v1/creators/{}/videos"])
+@pytest.mark.parametrize(
+    "creator",
+    # A literal "." or ".." is resolved by the HTTP client before the request is sent (as a browser does), so
+    # the server never receives one; the provider tests above cover them. The encoded forms do arrive.
+    [
+        "%2E%2E",
+        "%2E",
+        "%2e%2e%2f%2e%2e%2fapi",
+        "a%2Fb",
+        "a%5Cb",
+        "a%00b",
+        "a%0Ab",
+        "a%09b",
+        "a%0D%0AX-Injected:%201",
+        "a.b",
+        "a" * 65,
+        "a" * 5000,
+    ],
+)
+def test_the_api_refuses_an_adversarial_creator_id_without_asking_the_foundation(endpoint, creator):
+    nf = Foundation(routes={VELOCITY: "channel_velocity.json"})
+    r = client(nf).get(endpoint.format(creator))
+    assert r.status_code in (404, 422), r.text
+    assert nf.requests == []
+    assert "X-Injected" not in r.headers
 
 
 def test_the_largest_window_is_accepted():
