@@ -1,0 +1,32 @@
+{
+ "vt-market-in-kannada-ai-song": {
+  "niche": "vt-market-in-kannada-ai-song",
+  "found": true,
+  "videos": [
+   {
+    "videoId": "aiKnMusic01",
+    "outlierScore": 3.0
+   },
+   {
+    "videoId": "aiKnMusic02",
+    "outlierScore": 3.0
+   },
+   {
+    "videoId": "aiKnMusic03",
+    "outlierScore": 3.0
+   }
+  ]
+ },
+ "vt-market-kr-ai-song": {
+  "niche": "vt-market-kr-ai-song",
+  "found": true,
+  "videos": [
+   {
+    "videoId": "aiKoSong007"
+   },
+   {
+    "videoId": "aiKnMusic03"
+   }
+  ]
+ }
+}

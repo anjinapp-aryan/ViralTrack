@@ -205,3 +205,182 @@ class ErrorBody(_Strict):
 
 class ErrorOut(_Strict):
     error: ErrorBody
+
+
+# ---- AI content intelligence (read-only, computed at request time, nothing stored) ----
+
+AIStatusName = Literal["CONFIRMED_AI", "LIKELY_AI", "POSSIBLY_AI", "NOT_AI", "UNKNOWN"]
+CategoryName = Literal[
+    "AI_MUSIC_VIDEO", "AI_MUSIC_AUDIO", "AI_VIDEO_WITH_MUSIC", "AI_NORMAL_VIDEO", "NORMAL_NON_AI", "UNKNOWN"
+]
+FormatName = Literal["short_form", "long_form", "live", "unknown"]
+ConfidenceName = Literal["high", "medium", "low", "none"]
+
+
+class AIClassificationOut(_Strict):
+    status: AIStatusName
+    confidence: ConfidenceName = Field(description="a label, not a probability; no calibrated model is used")
+    category: CategoryName
+    reason: str = Field(description="why this status, in words")
+    category_reason: str
+    evidence_sources: list[str] = Field(
+        description="platform_disclosure, title, creator_tags, platform_category"
+    )
+    evidence: list[str] = Field(description="each piece of evidence found, in words")
+    classifier_version: str
+    classified_at: datetime
+
+
+class FormatOut(_Strict):
+    format_type: FormatName = Field(
+        description="a ViralTrack duration tag (short_form: 1 to 180 s), not the platform's Shorts flag"
+    )
+    format_confidence: ConfidenceName
+    reason: str
+    duration_seconds: int | None
+
+
+class CountryOut(_Strict):
+    discovery_countries: list[str] = Field(
+        description="markets of ViralTrack's own regional collections that found the item; empty when none"
+    )
+    discovery_source: str | None
+    creator_country: str | None = Field(description="the country the creator declared on the channel")
+    creator_country_source: str | None
+    creator_country_confidence: ConfidenceName = Field(
+        description="medium: self-declared and unverified; none: not declared"
+    )
+    language_code: str | None
+    language_source: str | None = Field(
+        description="the data source stores the declared audio or metadata language, else its own text "
+        "detection, without saying which"
+    )
+
+
+class AIVideo(_Strict):
+    video: Video
+    classification: AIClassificationOut
+    format: FormatOut
+    country: CountryOut
+
+
+class Count(_Strict):
+    key: str
+    count: int
+
+
+class CorpusMeta(_Strict):
+    platform: PlatformName
+    data_origin: OriginName
+    demo: bool
+    period: str
+    candidates_examined: int = Field(description="collected items read for this answer")
+    candidate_limit: int
+    candidate_limit_reached: bool = Field(description="true when more items may exist than were examined")
+    excluded_gaming: int = Field(description="items left out because they are Gaming content")
+    signals_missing: int = Field(description="items whose stored tags and disclosure could not be read")
+    collected_from: datetime | None = Field(description="earliest time the data source first stored an item")
+    collected_to: datetime | None = Field(description="latest time the data source first stored an item")
+    classifier_version: str
+    notes: list[str]
+
+
+class AIPageMeta(CorpusMeta):
+    sort: Literal["views", "published_at"]
+    page: int
+    page_size: int
+    returned: int
+    total: int = Field(description="items matching every filter among those examined")
+    has_more: bool
+
+
+class AIPage(_Strict):
+    data: list[AIVideo]
+    meta: AIPageMeta
+
+
+class AISummary(_Strict):
+    meta: CorpusMeta
+    matching: int = Field(description="items matching every filter")
+    by_status: list[Count] = Field(description="all examined items except excluded ones, by AI status")
+    by_category: list[Count]
+    by_format: list[Count]
+    by_confidence: list[Count]
+    by_creator_country: list[Count]
+    by_discovery_country: list[Count]
+    by_language: list[Count]
+    recent: list[AIVideo] = Field(description="the most recently published matching items")
+
+
+class CountryRow(_Strict):
+    country: str = Field(description="ISO 3166-1 alpha-2 code, or 'unknown'")
+    items: int
+    by_category: list[Count]
+    by_format: list[Count]
+    by_language: list[Count]
+    by_published_day: list[Count]
+
+
+class AICountries(_Strict):
+    meta: CorpusMeta
+    basis: Literal["creator", "discovery"]
+    data: list[CountryRow]
+
+
+class Theme(_Strict):
+    term: str
+    items: int = Field(description="supporting items that use the term")
+
+
+class EvidenceItem(_Strict):
+    id: str
+    url: str
+    title: str | None
+    creator_name: str | None
+    published_at: datetime | None
+    views: MetricValue | None
+    status: AIStatusName
+    category: CategoryName
+
+
+class CreativeBrief(_Strict):
+    opportunity_title: str
+    country: str | None
+    country_basis: Literal["creator", "discovery"]
+    language_code: str | None
+    category: CategoryName
+    format_type: FormatName
+    audience_hypothesis: str
+    theme: str
+    original_creative_angle: str
+    suggested_duration: str
+    hook_concept: str
+    story_outline: list[str]
+    music_direction: str | None
+    visual_direction: str
+    platform_recommendations: list[str]
+    rights_checklist: list[str]
+    generated_by: Literal["template"]
+    note: str
+
+
+class Opportunity(_Strict):
+    key: str
+    category: CategoryName
+    format_type: FormatName
+    language_code: str | None
+    country: str | None
+    country_basis: Literal["creator", "discovery"]
+    item_count: int = Field(description="collected items that support it; the only ordering input")
+    newest_published_at: datetime | None
+    themes: list[Theme]
+    summary: str
+    evidence: list[EvidenceItem]
+    brief: CreativeBrief
+
+
+class AIOpportunities(_Strict):
+    meta: CorpusMeta
+    basis: Literal["creator", "discovery"]
+    min_items: int
+    data: list[Opportunity]

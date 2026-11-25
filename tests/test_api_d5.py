@@ -400,6 +400,10 @@ def test_only_get_is_routed_and_no_ingestion_route_exists():
         "/api/v1/creators",
         "/api/v1/creators/{creator_id}",
         "/api/v1/creators/{creator_id}/videos",
+        "/api/v1/ai/content",
+        "/api/v1/ai/summary",
+        "/api/v1/ai/countries",
+        "/api/v1/ai/opportunities",
     }
     assert all(m <= {"GET", "HEAD"} for m in api.values())
     assert client().post("/api/v1/discover").status_code == 405
@@ -770,6 +774,10 @@ def test_openapi_documents_every_endpoint_with_errors(openapi):
         "/api/v1/creators",
         "/api/v1/creators/{creator_id}",
         "/api/v1/creators/{creator_id}/videos",
+        "/api/v1/ai/content",
+        "/api/v1/ai/summary",
+        "/api/v1/ai/countries",
+        "/api/v1/ai/opportunities",
     }
     for p in ("/api/v1/discover", "/api/v1/search", "/api/v1/creators", "/api/v1/creators/{creator_id}"):
         responses = paths[p]["get"]["responses"]

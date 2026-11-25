@@ -155,3 +155,23 @@ API data.
      whether that is acceptable. Until then, keep the backup or history window at or below 30 days where the
      plan allows it, and record the chosen setting here.
    - A restore can bring deleted rows back, so run the retention job immediately after any restore.
+
+## AI Content Intelligence (2026-11-25)
+
+The AI views add no table and no column. The five retention questions:
+
+- **What is stored, and why?** Nothing new is stored. The AI status, category, format, country dimensions and
+  briefs are computed for each request from metadata the foundation already holds. The provider keeps each
+  video's stored tags, synthetic-content disclosure, declared channel country and broadcast status in
+  process memory for at most 10 minutes (`SIGNALS_TTL_SECONDS`), so that pages do not re-read them. That
+  copy is lost on restart.
+- **For how long?** At most 10 minutes in memory. The source rows follow the existing rules above:
+  `videos` and `channels` are purged after 30 days; `video_niches` cascades with its video.
+- **Can it be recomputed?** Yes, always, from the foundation's rows.
+- **Raw or derived?** The inputs are RAW (provider metadata). The classifications and briefs are DERIVED and
+  never persisted.
+- **Must it be deleted?** Nothing persisted, so nothing to delete.
+
+One addition to existing data: a regional collection made with `collect_market` stores its niche under the
+label `vt-market-<cc> <query>`. That is a `niches` row (USER, KEEP), the same as any keyword the user
+chooses. Its video links cascade with the videos. No regional collection has been run.

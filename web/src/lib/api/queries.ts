@@ -6,6 +6,10 @@ import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
 import {
   api,
   unwrap,
+  type AiContentParams,
+  type AiCountriesParams,
+  type AiOpportunitiesParams,
+  type AiSummaryParams,
   type CreatorVideosParams,
   type CreatorsParams,
   type DiscoverParams,
@@ -90,6 +94,66 @@ export function useDiscover(params: DiscoverParams) {
     queryFn: ({ signal }) =>
       unwrap(
         api.GET('/api/v1/discover', { params: { query: params }, signal })
+      ),
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
+  })
+}
+
+// ---- AI Content Intelligence: read-only GETs, classified by the API at request time ----
+
+export function useAiSummary(params: AiSummaryParams, enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: ['ai-summary', params],
+    queryFn: ({ signal }) =>
+      unwrap(
+        api.GET('/api/v1/ai/summary', { params: { query: params }, signal })
+      ),
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useAiContent(params: AiContentParams, enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: ['ai-content', params],
+    queryFn: ({ signal }) =>
+      unwrap(
+        api.GET('/api/v1/ai/content', { params: { query: params }, signal })
+      ),
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useAiCountries(params: AiCountriesParams, enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: ['ai-countries', params],
+    queryFn: ({ signal }) =>
+      unwrap(
+        api.GET('/api/v1/ai/countries', { params: { query: params }, signal })
+      ),
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useAiOpportunities(
+  params: AiOpportunitiesParams,
+  enabled = true
+) {
+  return useQuery({
+    enabled,
+    queryKey: ['ai-opportunities', params],
+    queryFn: ({ signal }) =>
+      unwrap(
+        api.GET('/api/v1/ai/opportunities', {
+          params: { query: params },
+          signal,
+        })
       ),
     placeholderData: keepPreviousData,
     staleTime: 60 * 1000,

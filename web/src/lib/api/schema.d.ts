@@ -4,6 +4,74 @@
  */
 
 export interface paths {
+    "/api/v1/ai/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Collected videos with their AI classification, format and country dimensions. */
+        get: operations["ai_content_api_v1_ai_content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/countries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-country breakdown of the classified corpus (creator-declared or discovery market). */
+        get: operations["ai_countries_api_v1_ai_countries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/opportunities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Groups of AI content in the corpus, with evidence and an original creative brief for each. */
+        get: operations["ai_opportunities_api_v1_ai_opportunities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Counts of the classified corpus by status, category, format, confidence, country and language. */
+        get: operations["ai_summary_api_v1_ai_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/capabilities": {
         parameters: {
             query?: never;
@@ -144,6 +212,188 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AIClassificationOut */
+        AIClassificationOut: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "AI_MUSIC_VIDEO" | "AI_MUSIC_AUDIO" | "AI_VIDEO_WITH_MUSIC" | "AI_NORMAL_VIDEO" | "NORMAL_NON_AI" | "UNKNOWN";
+            /** Category Reason */
+            category_reason: string;
+            /**
+             * Classified At
+             * Format: date-time
+             */
+            classified_at: string;
+            /** Classifier Version */
+            classifier_version: string;
+            /**
+             * Confidence
+             * @description a label, not a probability; no calibrated model is used
+             * @enum {string}
+             */
+            confidence: "high" | "medium" | "low" | "none";
+            /**
+             * Evidence
+             * @description each piece of evidence found, in words
+             */
+            evidence: string[];
+            /**
+             * Evidence Sources
+             * @description platform_disclosure, title, creator_tags, platform_category
+             */
+            evidence_sources: string[];
+            /**
+             * Reason
+             * @description why this status, in words
+             */
+            reason: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "CONFIRMED_AI" | "LIKELY_AI" | "POSSIBLY_AI" | "NOT_AI" | "UNKNOWN";
+        };
+        /** AICountries */
+        AICountries: {
+            /**
+             * Basis
+             * @enum {string}
+             */
+            basis: "creator" | "discovery";
+            /** Data */
+            data: components["schemas"]["CountryRow"][];
+            meta: components["schemas"]["CorpusMeta"];
+        };
+        /** AIOpportunities */
+        AIOpportunities: {
+            /**
+             * Basis
+             * @enum {string}
+             */
+            basis: "creator" | "discovery";
+            /** Data */
+            data: components["schemas"]["Opportunity"][];
+            meta: components["schemas"]["CorpusMeta"];
+            /** Min Items */
+            min_items: number;
+        };
+        /** AIPage */
+        AIPage: {
+            /** Data */
+            data: components["schemas"]["AIVideo"][];
+            meta: components["schemas"]["AIPageMeta"];
+        };
+        /** AIPageMeta */
+        AIPageMeta: {
+            /** Candidate Limit */
+            candidate_limit: number;
+            /**
+             * Candidate Limit Reached
+             * @description true when more items may exist than were examined
+             */
+            candidate_limit_reached: boolean;
+            /**
+             * Candidates Examined
+             * @description collected items read for this answer
+             */
+            candidates_examined: number;
+            /** Classifier Version */
+            classifier_version: string;
+            /**
+             * Collected From
+             * @description earliest time the data source first stored an item
+             */
+            collected_from: string | null;
+            /**
+             * Collected To
+             * @description latest time the data source first stored an item
+             */
+            collected_to: string | null;
+            /**
+             * Data Origin
+             * @enum {string}
+             */
+            data_origin: "real_provider_data" | "demo" | "test";
+            /** Demo */
+            demo: boolean;
+            /**
+             * Excluded Gaming
+             * @description items left out because they are Gaming content
+             */
+            excluded_gaming: number;
+            /** Has More */
+            has_more: boolean;
+            /** Notes */
+            notes: string[];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Period */
+            period: string;
+            /**
+             * Platform
+             * @enum {string}
+             */
+            platform: "youtube" | "instagram" | "tiktok";
+            /** Returned */
+            returned: number;
+            /**
+             * Signals Missing
+             * @description items whose stored tags and disclosure could not be read
+             */
+            signals_missing: number;
+            /**
+             * Sort
+             * @enum {string}
+             */
+            sort: "views" | "published_at";
+            /**
+             * Total
+             * @description items matching every filter among those examined
+             */
+            total: number;
+        };
+        /** AISummary */
+        AISummary: {
+            /** By Category */
+            by_category: components["schemas"]["Count"][];
+            /** By Confidence */
+            by_confidence: components["schemas"]["Count"][];
+            /** By Creator Country */
+            by_creator_country: components["schemas"]["Count"][];
+            /** By Discovery Country */
+            by_discovery_country: components["schemas"]["Count"][];
+            /** By Format */
+            by_format: components["schemas"]["Count"][];
+            /** By Language */
+            by_language: components["schemas"]["Count"][];
+            /**
+             * By Status
+             * @description all examined items except excluded ones, by AI status
+             */
+            by_status: components["schemas"]["Count"][];
+            /**
+             * Matching
+             * @description items matching every filter
+             */
+            matching: number;
+            meta: components["schemas"]["CorpusMeta"];
+            /**
+             * Recent
+             * @description the most recently published matching items
+             */
+            recent: components["schemas"]["AIVideo"][];
+        };
+        /** AIVideo */
+        AIVideo: {
+            classification: components["schemas"]["AIClassificationOut"];
+            country: components["schemas"]["CountryOut"];
+            format: components["schemas"]["FormatOut"];
+            video: components["schemas"]["Video"];
+        };
         /** CapabilitiesOut */
         CapabilitiesOut: {
             /**
@@ -182,6 +432,165 @@ export interface components {
              * @enum {string}
              */
             status: "ok" | "unavailable" | "not_configured";
+        };
+        /** CorpusMeta */
+        CorpusMeta: {
+            /** Candidate Limit */
+            candidate_limit: number;
+            /**
+             * Candidate Limit Reached
+             * @description true when more items may exist than were examined
+             */
+            candidate_limit_reached: boolean;
+            /**
+             * Candidates Examined
+             * @description collected items read for this answer
+             */
+            candidates_examined: number;
+            /** Classifier Version */
+            classifier_version: string;
+            /**
+             * Collected From
+             * @description earliest time the data source first stored an item
+             */
+            collected_from: string | null;
+            /**
+             * Collected To
+             * @description latest time the data source first stored an item
+             */
+            collected_to: string | null;
+            /**
+             * Data Origin
+             * @enum {string}
+             */
+            data_origin: "real_provider_data" | "demo" | "test";
+            /** Demo */
+            demo: boolean;
+            /**
+             * Excluded Gaming
+             * @description items left out because they are Gaming content
+             */
+            excluded_gaming: number;
+            /** Notes */
+            notes: string[];
+            /** Period */
+            period: string;
+            /**
+             * Platform
+             * @enum {string}
+             */
+            platform: "youtube" | "instagram" | "tiktok";
+            /**
+             * Signals Missing
+             * @description items whose stored tags and disclosure could not be read
+             */
+            signals_missing: number;
+        };
+        /** Count */
+        Count: {
+            /** Count */
+            count: number;
+            /** Key */
+            key: string;
+        };
+        /** CountryOut */
+        CountryOut: {
+            /**
+             * Creator Country
+             * @description the country the creator declared on the channel
+             */
+            creator_country: string | null;
+            /**
+             * Creator Country Confidence
+             * @description medium: self-declared and unverified; none: not declared
+             * @enum {string}
+             */
+            creator_country_confidence: "high" | "medium" | "low" | "none";
+            /** Creator Country Source */
+            creator_country_source: string | null;
+            /**
+             * Discovery Countries
+             * @description markets of ViralTrack's own regional collections that found the item; empty when none
+             */
+            discovery_countries: string[];
+            /** Discovery Source */
+            discovery_source: string | null;
+            /** Language Code */
+            language_code: string | null;
+            /**
+             * Language Source
+             * @description the data source stores the declared audio or metadata language, else its own text detection, without saying which
+             */
+            language_source: string | null;
+        };
+        /** CountryRow */
+        CountryRow: {
+            /** By Category */
+            by_category: components["schemas"]["Count"][];
+            /** By Format */
+            by_format: components["schemas"]["Count"][];
+            /** By Language */
+            by_language: components["schemas"]["Count"][];
+            /** By Published Day */
+            by_published_day: components["schemas"]["Count"][];
+            /**
+             * Country
+             * @description ISO 3166-1 alpha-2 code, or 'unknown'
+             */
+            country: string;
+            /** Items */
+            items: number;
+        };
+        /** CreativeBrief */
+        CreativeBrief: {
+            /** Audience Hypothesis */
+            audience_hypothesis: string;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "AI_MUSIC_VIDEO" | "AI_MUSIC_AUDIO" | "AI_VIDEO_WITH_MUSIC" | "AI_NORMAL_VIDEO" | "NORMAL_NON_AI" | "UNKNOWN";
+            /** Country */
+            country: string | null;
+            /**
+             * Country Basis
+             * @enum {string}
+             */
+            country_basis: "creator" | "discovery";
+            /**
+             * Format Type
+             * @enum {string}
+             */
+            format_type: "short_form" | "long_form" | "live" | "unknown";
+            /**
+             * Generated By
+             * @constant
+             */
+            generated_by: "template";
+            /** Hook Concept */
+            hook_concept: string;
+            /** Language Code */
+            language_code: string | null;
+            /** Music Direction */
+            music_direction: string | null;
+            /** Note */
+            note: string;
+            /** Opportunity Title */
+            opportunity_title: string;
+            /** Original Creative Angle */
+            original_creative_angle: string;
+            /** Platform Recommendations */
+            platform_recommendations: string[];
+            /** Rights Checklist */
+            rights_checklist: string[];
+            /** Story Outline */
+            story_outline: string[];
+            /** Suggested Duration */
+            suggested_duration: string;
+            /** Theme */
+            theme: string;
+            /** Visual Direction */
+            visual_direction: string;
         };
         /** CreatorDetail */
         CreatorDetail: {
@@ -252,6 +661,30 @@ export interface components {
         ErrorOut: {
             error: components["schemas"]["ErrorBody"];
         };
+        /** EvidenceItem */
+        EvidenceItem: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "AI_MUSIC_VIDEO" | "AI_MUSIC_AUDIO" | "AI_VIDEO_WITH_MUSIC" | "AI_NORMAL_VIDEO" | "NORMAL_NON_AI" | "UNKNOWN";
+            /** Creator Name */
+            creator_name: string | null;
+            /** Id */
+            id: string;
+            /** Published At */
+            published_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "CONFIRMED_AI" | "LIKELY_AI" | "POSSIBLY_AI" | "NOT_AI" | "UNKNOWN";
+            /** Title */
+            title: string | null;
+            /** Url */
+            url: string;
+            views: components["schemas"]["MetricValue"] | null;
+        };
         /** FilterOut */
         FilterOut: {
             /** Applies To */
@@ -270,6 +703,24 @@ export interface components {
             type: string;
             /** Values */
             values?: string[] | null;
+        };
+        /** FormatOut */
+        FormatOut: {
+            /** Duration Seconds */
+            duration_seconds: number | null;
+            /**
+             * Format Confidence
+             * @enum {string}
+             */
+            format_confidence: "high" | "medium" | "low" | "none";
+            /**
+             * Format Type
+             * @description a ViralTrack duration tag (short_form: 1 to 180 s), not the platform's Shorts flag
+             * @enum {string}
+             */
+            format_type: "short_form" | "long_form" | "live" | "unknown";
+            /** Reason */
+            reason: string;
         };
         /** HealthOut */
         HealthOut: {
@@ -349,6 +800,44 @@ export interface components {
             source: string;
             /** Value */
             value: number;
+        };
+        /** Opportunity */
+        Opportunity: {
+            brief: components["schemas"]["CreativeBrief"];
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "AI_MUSIC_VIDEO" | "AI_MUSIC_AUDIO" | "AI_VIDEO_WITH_MUSIC" | "AI_NORMAL_VIDEO" | "NORMAL_NON_AI" | "UNKNOWN";
+            /** Country */
+            country: string | null;
+            /**
+             * Country Basis
+             * @enum {string}
+             */
+            country_basis: "creator" | "discovery";
+            /** Evidence */
+            evidence: components["schemas"]["EvidenceItem"][];
+            /**
+             * Format Type
+             * @enum {string}
+             */
+            format_type: "short_form" | "long_form" | "live" | "unknown";
+            /**
+             * Item Count
+             * @description collected items that support it; the only ordering input
+             */
+            item_count: number;
+            /** Key */
+            key: string;
+            /** Language Code */
+            language_code: string | null;
+            /** Newest Published At */
+            newest_published_at: string | null;
+            /** Summary */
+            summary: string;
+            /** Themes */
+            themes: components["schemas"]["Theme"][];
         };
         /** PageMeta */
         PageMeta: {
@@ -440,6 +929,16 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** Theme */
+        Theme: {
+            /**
+             * Items
+             * @description supporting items that use the term
+             */
+            items: number;
+            /** Term */
+            term: string;
+        };
         /** Video */
         Video: {
             /** Category */
@@ -510,6 +1009,280 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    ai_content_api_v1_ai_content_get: {
+        parameters: {
+            query?: {
+                period?: string;
+                /** @description AI statuses; default CONFIRMED_AI and LIKELY_AI */
+                status?: ("CONFIRMED_AI" | "LIKELY_AI" | "POSSIBLY_AI" | "NOT_AI" | "UNKNOWN")[] | null;
+                category?: ("AI_MUSIC_VIDEO" | "AI_MUSIC_AUDIO" | "AI_VIDEO_WITH_MUSIC" | "AI_NORMAL_VIDEO" | "NORMAL_NON_AI" | "UNKNOWN")[] | null;
+                format?: ("short_form" | "long_form" | "live" | "unknown")[] | null;
+                /** @description ISO codes or 'unknown' */
+                creator_country?: string[] | null;
+                /** @description ISO codes or 'unknown' */
+                discovery_country?: string[] | null;
+                /** @description language codes or 'unknown' */
+                language?: string[] | null;
+                sort?: "views" | "published_at";
+                platform?: "youtube" | "instagram" | "tiktok";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIPage"];
+                };
+            };
+            /** @description Invalid or unsupported request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider answered with something unusable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider timed out */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    ai_countries_api_v1_ai_countries_get: {
+        parameters: {
+            query?: {
+                basis?: "creator" | "discovery";
+                period?: string;
+                /** @description AI statuses; default CONFIRMED_AI and LIKELY_AI */
+                status?: ("CONFIRMED_AI" | "LIKELY_AI" | "POSSIBLY_AI" | "NOT_AI" | "UNKNOWN")[] | null;
+                category?: ("AI_MUSIC_VIDEO" | "AI_MUSIC_AUDIO" | "AI_VIDEO_WITH_MUSIC" | "AI_NORMAL_VIDEO" | "NORMAL_NON_AI" | "UNKNOWN")[] | null;
+                format?: ("short_form" | "long_form" | "live" | "unknown")[] | null;
+                /** @description limit to these ISO codes or 'unknown' */
+                country?: string[] | null;
+                language?: string[] | null;
+                platform?: "youtube" | "instagram" | "tiktok";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AICountries"];
+                };
+            };
+            /** @description Invalid or unsupported request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider answered with something unusable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider timed out */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    ai_opportunities_api_v1_ai_opportunities_get: {
+        parameters: {
+            query?: {
+                basis?: "creator" | "discovery";
+                period?: string;
+                /** @description AI statuses; default CONFIRMED_AI and LIKELY_AI */
+                status?: ("CONFIRMED_AI" | "LIKELY_AI" | "POSSIBLY_AI" | "NOT_AI" | "UNKNOWN")[] | null;
+                category?: ("AI_MUSIC_VIDEO" | "AI_MUSIC_AUDIO" | "AI_VIDEO_WITH_MUSIC" | "AI_NORMAL_VIDEO" | "NORMAL_NON_AI" | "UNKNOWN")[] | null;
+                format?: ("short_form" | "long_form" | "live" | "unknown")[] | null;
+                creator_country?: string[] | null;
+                discovery_country?: string[] | null;
+                language?: string[] | null;
+                min_items?: number;
+                limit?: number;
+                platform?: "youtube" | "instagram" | "tiktok";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIOpportunities"];
+                };
+            };
+            /** @description Invalid or unsupported request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider answered with something unusable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider timed out */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    ai_summary_api_v1_ai_summary_get: {
+        parameters: {
+            query?: {
+                period?: string;
+                /** @description AI statuses; default CONFIRMED_AI and LIKELY_AI */
+                status?: ("CONFIRMED_AI" | "LIKELY_AI" | "POSSIBLY_AI" | "NOT_AI" | "UNKNOWN")[] | null;
+                category?: ("AI_MUSIC_VIDEO" | "AI_MUSIC_AUDIO" | "AI_VIDEO_WITH_MUSIC" | "AI_NORMAL_VIDEO" | "NORMAL_NON_AI" | "UNKNOWN")[] | null;
+                format?: ("short_form" | "long_form" | "live" | "unknown")[] | null;
+                creator_country?: string[] | null;
+                discovery_country?: string[] | null;
+                language?: string[] | null;
+                platform?: "youtube" | "instagram" | "tiktok";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AISummary"];
+                };
+            };
+            /** @description Invalid or unsupported request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider answered with something unusable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider is unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The provider timed out */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     capabilities_api_v1_capabilities_get: {
         parameters: {
             query?: never;

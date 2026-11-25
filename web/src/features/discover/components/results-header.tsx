@@ -1,8 +1,14 @@
-import { ArrowDownWideNarrow, FlaskConical, Info } from 'lucide-react'
+import { ArrowDownWideNarrow, Clock, FlaskConical, Info } from 'lucide-react'
 import type { PageMeta, Video } from '@/lib/api/client'
-import { fullNumber, relativeTime } from '@/lib/format'
+import {
+  absoluteDate,
+  absoluteDateTime,
+  fullNumber,
+  relativeTime,
+} from '@/lib/format'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { collectionSpan } from '../collection-span'
 
 const ORDER_LABELS: Record<string, string> = {
   views: 'Most views',
@@ -23,7 +29,7 @@ export function ResultsHeader({
 }) {
   const start = (meta.page - 1) * meta.page_size + 1
   const end = start + meta.returned - 1
-  const retrieved = items[0]?.retrieved_at ?? null
+  const collected = collectionSpan(items)
   return (
     <div className='flex flex-col gap-3'>
       <div className='flex flex-wrap items-end justify-between gap-x-6 gap-y-2'>
@@ -58,10 +64,39 @@ export function ResultsHeader({
               <span aria-hidden>·</span>
             </>
           )}
-          <span>
-            YouTube via the local foundation
-            {retrieved ? `, retrieved ${relativeTime(retrieved)}` : ''}
-          </span>
+          <span>YouTube via the local foundation</span>
+          {collected && (
+            <>
+              <span aria-hidden>·</span>
+              <span
+                data-testid='collected-at'
+                title='When these videos were first collected from YouTube into the local dataset. View counts are as of that collection unless they were refreshed later.'
+              >
+                Collected{' '}
+                {collected.oldestDay === collected.newestDay
+                  ? absoluteDateTime(collected.newest)
+                  : `${absoluteDate(collected.oldest)} – ${absoluteDate(collected.newest)}`}{' '}
+                ({relativeTime(collected.oldest)})
+              </span>
+              {collected.stale ? (
+                <Badge
+                  variant='outline'
+                  className='border-amber-500/60 text-amber-700 dark:text-amber-300'
+                >
+                  <Clock aria-hidden />
+                  Stale: collected over 24 h ago
+                </Badge>
+              ) : (
+                <Badge
+                  variant='outline'
+                  className='border-emerald-500/60 text-emerald-700 dark:text-emerald-300'
+                >
+                  <Clock aria-hidden />
+                  Collected in the last 24 h
+                </Badge>
+              )}
+            </>
+          )}
           {meta.demo && (
             <Badge
               variant='outline'

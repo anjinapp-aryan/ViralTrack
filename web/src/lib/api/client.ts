@@ -27,6 +27,26 @@ export type CreatorsParams = NonNullable<
 export type CreatorVideosParams = NonNullable<
   paths['/api/v1/creators/{creator_id}/videos']['get']['parameters']['query']
 >
+export type AiVideo = Schemas['AIVideo']
+export type AiSummary = Schemas['AISummary']
+export type AiCountries = Schemas['AICountries']
+export type AiOpportunities = Schemas['AIOpportunities']
+export type AiOpportunity = Schemas['Opportunity']
+export type CorpusMeta = Schemas['CorpusMeta']
+export type Count = Schemas['Count']
+export type CountryRow = Schemas['CountryRow']
+export type AiContentParams = NonNullable<
+  paths['/api/v1/ai/content']['get']['parameters']['query']
+>
+export type AiSummaryParams = NonNullable<
+  paths['/api/v1/ai/summary']['get']['parameters']['query']
+>
+export type AiCountriesParams = NonNullable<
+  paths['/api/v1/ai/countries']['get']['parameters']['query']
+>
+export type AiOpportunitiesParams = NonNullable<
+  paths['/api/v1/ai/opportunities']['get']['parameters']['query']
+>
 
 // `fetch` is looked up on every request (not captured once), so the page always uses the current one.
 export const api = createClient<paths>({

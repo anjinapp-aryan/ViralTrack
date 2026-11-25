@@ -66,3 +66,8 @@ python -m viraltrack.api                    # http://127.0.0.1:8000, docs at /do
 Endpoints: `/api/v1/health`, `/api/v1/health/ready`, `/api/v1/capabilities`, `/api/v1/discover`,
 `/api/v1/search`, `/api/v1/creators`, `/api/v1/creators/{creator_id}`. Details and limits:
 [docs/phase-4-7/D5_API_COMPLETION_REPORT.md](docs/phase-4-7/D5_API_COMPLETION_REPORT.md).
+
+AI Content Intelligence (read-only, computed per request, nothing stored, Gaming excluded):
+`/api/v1/ai/content`, `/api/v1/ai/summary`, `/api/v1/ai/countries`, `/api/v1/ai/opportunities`; the web UI
+shows them at `/ai`. Method, limits and the reuse audit:
+[docs/ai-intelligence/AI_CONTENT_INTELLIGENCE.md](docs/ai-intelligence/AI_CONTENT_INTELLIGENCE.md).

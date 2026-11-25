@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import re
+import threading
+import time
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
@@ -14,6 +17,7 @@ from viraltrack.domain import (
     ContentPage,
     Creator,
     IngestionDisabled,
+    NotFound,
     Platform,
     PlatformCapabilities,
     ProviderCredentialsMissing,
@@ -22,6 +26,8 @@ from viraltrack.domain import (
     RateLimited,
     RestrictedMetric,
 )
+from viraltrack.intelligence import country as market
+from viraltrack.intelligence.taxonomy import ContentSignals
 from viraltrack.providers.base import (
     CreatorSnapshot,
     DiscoveryQuery,
@@ -75,6 +81,14 @@ _REFUSED_SORTS = {
 # A creator's video list is one window of at most this many videos: the foundation computes each video's rates
 # one query at a time and has no offset or cap, so ViralTrack bounds it.
 CREATOR_CONTENT_WINDOW = 200
+# Classification metadata is read per item from the foundation's database and kept in memory this long.
+SIGNALS_TTL_SECONDS = 600
+SIGNALS_WORKERS = 8
+SIGNALS_MAX_TAGS = 100
+_VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
+_MARKET_NICHE = re.compile(r"^vt-market-[a-z]{2}-[\w-]{1,64}$", re.UNICODE)
+_LIVE = frozenset({"live", "upcoming", "none"})
+
 # The most subscribers a discovery query may allow a channel to have: a bounded limit, never "no limit".
 MAX_CREATOR_FOLLOWERS = 1_000_000
 
@@ -114,6 +128,13 @@ CAPABILITIES = PlatformCapabilities({
         True, "Internal only. niche-finder POST /api/refresh; needs VT_YOUTUBE_INGESTION_ENABLED=true"),
     Capability.INGESTION_STATUS: CapabilityInfo(
         True, "Internal only. Quota left today as niche-finder GET /api/health reports it"),
+    Capability.CONTENT_SIGNALS: CapabilityInfo(
+        True, "Stored tags, the creator's altered/synthetic-content disclosure, declared channel country and "
+              "broadcast status via niche-finder GET /api/inspect/video with fetch=false: read from the "
+              "foundation's database only, never from YouTube, no quota. Descriptions are not exposed"),
+    Capability.DISCOVERY_MARKETS: CapabilityInfo(
+        True, "Markets of ViralTrack's own regional collections, read back from their niche labels "
+              "(niche-finder GET /api/niches and /api/niches/{slug}/videos); other items have none"),
     Capability.DERIVED_VELOCITY: CapabilityInfo(
         True, "Views per hour from niche-finder snapshots (simple arithmetic), passed through "
               "as DERIVED; acceleration is RESTRICTED"),
@@ -198,6 +219,8 @@ class YouTubeProvider(PlatformProvider):
         self.metric_policy = youtube_metric_policy(settings.approvals)
         self._ingestion = settings.ingestion
         self._cooldown_until: datetime | None = None
+        self._signals: dict[str, tuple[float, ContentSignals]] = {}
+        self._signals_lock = threading.Lock()
 
     def capabilities(self) -> PlatformCapabilities:
         return CAPABILITIES
@@ -325,6 +348,70 @@ class YouTubeProvider(PlatformProvider):
         total = len(items) if len(videos) < limit else None
         return ContentPage(items=items, total=total, notes=notes)
 
+    # ---- AI content intelligence: read-only, from the foundation's database, never from YouTube ----
+
+    def get_content_signals(self, content_ids: list[str]) -> dict[str, ContentSignals]:
+        ids = list(dict.fromkeys(i for i in content_ids if isinstance(i, str)))
+        now = time.monotonic()
+        out: dict[str, ContentSignals] = {}
+        todo = []
+        with self._signals_lock:
+            for i in ids:
+                hit = self._signals.get(i)
+                if hit and hit[0] > now:
+                    out[i] = hit[1]
+                elif _VIDEO_ID.match(i):
+                    todo.append(i)
+                else:
+                    out[i] = ContentSignals(found=False)
+        if todo:
+            with ThreadPoolExecutor(max_workers=min(SIGNALS_WORKERS, len(todo))) as pool:
+                fetched = dict(zip(todo, pool.map(self._signals_of, todo)))
+            expires = time.monotonic() + SIGNALS_TTL_SECONDS
+            with self._signals_lock:
+                for i, sig in fetched.items():
+                    self._signals[i] = (expires, sig)
+            out.update(fetched)
+        return out
+
+    def _signals_of(self, video_id: str) -> ContentSignals:
+        # fetch=false and refresh=false: the foundation answers from its database and never calls YouTube.
+        try:
+            body = self._client.get(
+                "/api/inspect/video", {"video_id": video_id, "fetch": "false", "refresh": "false"}
+            )
+        except NotFound:
+            return ContentSignals(found=False)
+        if body.get("found") is not True or not isinstance(body.get("video"), dict):
+            return ContentSignals(found=False)
+        video = body["video"]
+        channel = body.get("channel") if isinstance(body.get("channel"), dict) else {}
+        tags = video.get("tags") if isinstance(video.get("tags"), list) else []
+        csm = video.get("containsSyntheticMedia")
+        live = video.get("liveContent")
+        return ContentSignals(
+            found=True,
+            tags=tuple(t.strip()[:100] for t in tags if isinstance(t, str) and t.strip())[:SIGNALS_MAX_TAGS],
+            synthetic_disclosure=csm if isinstance(csm, bool) else None,
+            creator_country=market.country_code(channel.get("country")),
+            live_status=live if live in _LIVE else None,
+        )
+
+    def discovery_markets(self) -> dict[str, tuple[str, ...]]:
+        found: dict[str, set[str]] = {}
+        listed = self._client.get("/api/niches").get("niches")
+        for niche in listed if isinstance(listed, list) else []:
+            slug = niche.get("slug") if isinstance(niche, dict) else None
+            if not isinstance(slug, str) or not _MARKET_NICHE.match(slug):
+                continue
+            code = market.market_of_slug(slug)
+            body = self._client.get(f"/api/niches/{quote(slug, safe='')}/videos", {"period": "all"})
+            for v in body.get("videos") or []:
+                vid = v.get("videoId") if isinstance(v, dict) else None
+                if isinstance(vid, str) and _VIDEO_ID.match(vid):
+                    found.setdefault(vid, set()).add(code)
+        return {k: tuple(sorted(v)) for k, v in found.items()}
+
     def check_ready(self) -> bool:
         """The foundation's GET /api/health (free, read-only, no quota) answered with ok=true."""
         return self._client.get("/api/health").get("ok") is True
@@ -369,6 +456,24 @@ class YouTubeProvider(PlatformProvider):
         if language is not None and not _LANGUAGE.match(language):
             raise ValueError(f"language must be a code like en or pt-BR, got {language!r}")
         body = {"query": query, "pages": pages, "region": region, "language": language, "period": period}
+        self._preflight(search_calls=pages)
+        answer = self._post("/api/collect/niche", body)
+        return ingestion.collect_result("collect_query", answer, self._clock())
+
+    def collect_market(self, region: str, text: str, pages: int = 1, language: str | None = None,
+                       period: str | None = None) -> IngestionResult:
+        """A keyword collection for one market, stored under a ViralTrack market label so that the market
+        can be read back (`discovery_markets`). The same guards and quota floor as `collect_query`."""
+        self._require_ingestion()
+        query = _ref(text)
+        if not isinstance(region, str) or not _REGION.match(region):
+            raise ValueError(f"region must be an ISO 3166-1 alpha-2 code like IN, got {region!r}")
+        pages = self._cap(pages, "max_search_pages")
+        period = _check_collect_period(period)
+        if language is not None and not _LANGUAGE.match(language):
+            raise ValueError(f"language must be a code like en or pt-BR, got {language!r}")
+        body = {"query": query, "label": market.market_label(region, query), "pages": pages,
+                "region": region, "language": language, "period": period}
         self._preflight(search_calls=pages)
         answer = self._post("/api/collect/niche", body)
         return ingestion.collect_result("collect_query", answer, self._clock())
