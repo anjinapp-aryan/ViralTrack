@@ -1,7 +1,8 @@
-# AI Content Intelligence: live-validation plan (NOT AUTHORIZED; needs explicit owner approval)
+# AI Content Intelligence: live-validation plan
 
-Nothing in this plan has been run. It spends YouTube quota and needs the owner's explicit "go" for these exact
-steps.
+Status: the owner approved and the collection ran on 2026-11-25 (30 units, 10 searches). The aggregate result is in
+`evidence/2026-11-25-live-validation.md`. The manual review of 20 classifications is still open. Any further
+collection spends YouTube quota and needs the owner's explicit approval.
 
 ## Goal
 
