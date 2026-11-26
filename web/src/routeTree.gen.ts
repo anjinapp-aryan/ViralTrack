@@ -14,7 +14,15 @@ import { Route as errors404RouteImport } from './routes/(errors)/404'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppAiRouteRouteImport } from './routes/_app/ai/route'
 import { Route as AppSourcesRouteImport } from './routes/_app/sources'
+import { Route as AppAiIndexRouteImport } from './routes/_app/ai/index'
+import { Route as AppAiBriefsRouteImport } from './routes/_app/ai/briefs'
+import { Route as AppAiCountriesRouteImport } from './routes/_app/ai/countries'
+import { Route as AppAiDiscoverRouteImport } from './routes/_app/ai/discover'
+import { Route as AppAiMusicRouteImport } from './routes/_app/ai/music'
+import { Route as AppAiOpportunitiesRouteImport } from './routes/_app/ai/opportunities'
+import { Route as AppAiVideoRouteImport } from './routes/_app/ai/video'
 import { Route as AppCreatorsIndexRouteImport } from './routes/_app/creators/index'
 import { Route as AppCreatorsCreatorIdRouteImport } from './routes/_app/creators/$creatorId'
 
@@ -42,10 +50,50 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppAiRouteRoute = AppAiRouteRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppSourcesRoute = AppSourcesRouteImport.update({
   id: '/sources',
   path: '/sources',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const AppAiIndexRoute = AppAiIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAiRouteRoute,
+} as any)
+const AppAiBriefsRoute = AppAiBriefsRouteImport.update({
+  id: '/briefs',
+  path: '/briefs',
+  getParentRoute: () => AppAiRouteRoute,
+} as any)
+const AppAiCountriesRoute = AppAiCountriesRouteImport.update({
+  id: '/countries',
+  path: '/countries',
+  getParentRoute: () => AppAiRouteRoute,
+} as any)
+const AppAiDiscoverRoute = AppAiDiscoverRouteImport.update({
+  id: '/discover',
+  path: '/discover',
+  getParentRoute: () => AppAiRouteRoute,
+} as any)
+const AppAiMusicRoute = AppAiMusicRouteImport.update({
+  id: '/music',
+  path: '/music',
+  getParentRoute: () => AppAiRouteRoute,
+} as any)
+const AppAiOpportunitiesRoute = AppAiOpportunitiesRouteImport.update({
+  id: '/opportunities',
+  path: '/opportunities',
+  getParentRoute: () => AppAiRouteRoute,
+} as any)
+const AppAiVideoRoute = AppAiVideoRouteImport.update({
+  id: '/video',
+  path: '/video',
+  getParentRoute: () => AppAiRouteRoute,
 } as any)
 const AppCreatorsIndexRoute = AppCreatorsIndexRouteImport.update({
   id: '/creators/',
@@ -60,11 +108,19 @@ const AppCreatorsCreatorIdRoute = AppCreatorsCreatorIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/ai': typeof AppAiRouteRouteWithChildren
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/sources': typeof AppSourcesRoute
+  '/ai/briefs': typeof AppAiBriefsRoute
+  '/ai/countries': typeof AppAiCountriesRoute
+  '/ai/discover': typeof AppAiDiscoverRoute
+  '/ai/music': typeof AppAiMusicRoute
+  '/ai/opportunities': typeof AppAiOpportunitiesRoute
+  '/ai/video': typeof AppAiVideoRoute
   '/creators/$creatorId': typeof AppCreatorsCreatorIdRoute
+  '/ai/': typeof AppAiIndexRoute
   '/creators/': typeof AppCreatorsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -73,29 +129,52 @@ export interface FileRoutesByTo {
   '/503': typeof errors503Route
   '/sources': typeof AppSourcesRoute
   '/': typeof AppIndexRoute
+  '/ai/briefs': typeof AppAiBriefsRoute
+  '/ai/countries': typeof AppAiCountriesRoute
+  '/ai/discover': typeof AppAiDiscoverRoute
+  '/ai/music': typeof AppAiMusicRoute
+  '/ai/opportunities': typeof AppAiOpportunitiesRoute
+  '/ai/video': typeof AppAiVideoRoute
   '/creators/$creatorId': typeof AppCreatorsCreatorIdRoute
+  '/ai': typeof AppAiIndexRoute
   '/creators': typeof AppCreatorsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
+  '/_app/ai': typeof AppAiRouteRouteWithChildren
   '/(errors)/404': typeof errors404Route
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
   '/_app/sources': typeof AppSourcesRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/ai/briefs': typeof AppAiBriefsRoute
+  '/_app/ai/countries': typeof AppAiCountriesRoute
+  '/_app/ai/discover': typeof AppAiDiscoverRoute
+  '/_app/ai/music': typeof AppAiMusicRoute
+  '/_app/ai/opportunities': typeof AppAiOpportunitiesRoute
+  '/_app/ai/video': typeof AppAiVideoRoute
   '/_app/creators/$creatorId': typeof AppCreatorsCreatorIdRoute
+  '/_app/ai/': typeof AppAiIndexRoute
   '/_app/creators/': typeof AppCreatorsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ai'
     | '/404'
     | '/500'
     | '/503'
     | '/sources'
+    | '/ai/briefs'
+    | '/ai/countries'
+    | '/ai/discover'
+    | '/ai/music'
+    | '/ai/opportunities'
+    | '/ai/video'
     | '/creators/$creatorId'
+    | '/ai/'
     | '/creators/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -104,17 +183,32 @@ export interface FileRouteTypes {
     | '/503'
     | '/sources'
     | '/'
+    | '/ai/briefs'
+    | '/ai/countries'
+    | '/ai/discover'
+    | '/ai/music'
+    | '/ai/opportunities'
+    | '/ai/video'
     | '/creators/$creatorId'
+    | '/ai'
     | '/creators'
   id:
     | '__root__'
     | '/_app'
+    | '/_app/ai'
     | '/(errors)/404'
     | '/(errors)/500'
     | '/(errors)/503'
     | '/_app/sources'
     | '/_app/'
+    | '/_app/ai/briefs'
+    | '/_app/ai/countries'
+    | '/_app/ai/discover'
+    | '/_app/ai/music'
+    | '/_app/ai/opportunities'
+    | '/_app/ai/video'
     | '/_app/creators/$creatorId'
+    | '/_app/ai/'
     | '/_app/creators/'
   fileRoutesById: FileRoutesById
 }
@@ -162,12 +256,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/ai': {
+      id: '/_app/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AppAiRouteRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/sources': {
       id: '/_app/sources'
       path: '/sources'
       fullPath: '/sources'
       preLoaderRoute: typeof AppSourcesRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/_app/ai/': {
+      id: '/_app/ai/'
+      path: '/'
+      fullPath: '/ai/'
+      preLoaderRoute: typeof AppAiIndexRouteImport
+      parentRoute: typeof AppAiRouteRoute
+    }
+    '/_app/ai/briefs': {
+      id: '/_app/ai/briefs'
+      path: '/briefs'
+      fullPath: '/ai/briefs'
+      preLoaderRoute: typeof AppAiBriefsRouteImport
+      parentRoute: typeof AppAiRouteRoute
+    }
+    '/_app/ai/countries': {
+      id: '/_app/ai/countries'
+      path: '/countries'
+      fullPath: '/ai/countries'
+      preLoaderRoute: typeof AppAiCountriesRouteImport
+      parentRoute: typeof AppAiRouteRoute
+    }
+    '/_app/ai/discover': {
+      id: '/_app/ai/discover'
+      path: '/discover'
+      fullPath: '/ai/discover'
+      preLoaderRoute: typeof AppAiDiscoverRouteImport
+      parentRoute: typeof AppAiRouteRoute
+    }
+    '/_app/ai/music': {
+      id: '/_app/ai/music'
+      path: '/music'
+      fullPath: '/ai/music'
+      preLoaderRoute: typeof AppAiMusicRouteImport
+      parentRoute: typeof AppAiRouteRoute
+    }
+    '/_app/ai/opportunities': {
+      id: '/_app/ai/opportunities'
+      path: '/opportunities'
+      fullPath: '/ai/opportunities'
+      preLoaderRoute: typeof AppAiOpportunitiesRouteImport
+      parentRoute: typeof AppAiRouteRoute
+    }
+    '/_app/ai/video': {
+      id: '/_app/ai/video'
+      path: '/video'
+      fullPath: '/ai/video'
+      preLoaderRoute: typeof AppAiVideoRouteImport
+      parentRoute: typeof AppAiRouteRoute
     }
     '/_app/creators/': {
       id: '/_app/creators/'
@@ -186,7 +336,32 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppAiRouteRouteChildren {
+  AppAiBriefsRoute: typeof AppAiBriefsRoute
+  AppAiCountriesRoute: typeof AppAiCountriesRoute
+  AppAiDiscoverRoute: typeof AppAiDiscoverRoute
+  AppAiMusicRoute: typeof AppAiMusicRoute
+  AppAiOpportunitiesRoute: typeof AppAiOpportunitiesRoute
+  AppAiVideoRoute: typeof AppAiVideoRoute
+  AppAiIndexRoute: typeof AppAiIndexRoute
+}
+
+const AppAiRouteRouteChildren: AppAiRouteRouteChildren = {
+  AppAiBriefsRoute: AppAiBriefsRoute,
+  AppAiCountriesRoute: AppAiCountriesRoute,
+  AppAiDiscoverRoute: AppAiDiscoverRoute,
+  AppAiMusicRoute: AppAiMusicRoute,
+  AppAiOpportunitiesRoute: AppAiOpportunitiesRoute,
+  AppAiVideoRoute: AppAiVideoRoute,
+  AppAiIndexRoute: AppAiIndexRoute,
+}
+
+const AppAiRouteRouteWithChildren = AppAiRouteRoute._addFileChildren(
+  AppAiRouteRouteChildren,
+)
+
 interface AppRouteRouteChildren {
+  AppAiRouteRoute: typeof AppAiRouteRouteWithChildren
   AppSourcesRoute: typeof AppSourcesRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCreatorsCreatorIdRoute: typeof AppCreatorsCreatorIdRoute
@@ -194,6 +369,7 @@ interface AppRouteRouteChildren {
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppAiRouteRoute: AppAiRouteRouteWithChildren,
   AppSourcesRoute: AppSourcesRoute,
   AppIndexRoute: AppIndexRoute,
   AppCreatorsCreatorIdRoute: AppCreatorsCreatorIdRoute,

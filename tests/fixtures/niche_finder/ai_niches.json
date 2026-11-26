@@ -1,0 +1,22 @@
+{
+ "niches": [
+  {
+   "slug": "vt-market-in-kannada-ai-song",
+   "query": "kannada ai song",
+   "label": "vt-market-in kannada ai song",
+   "video_count": 3
+  },
+  {
+   "slug": "vt-market-kr-ai-song",
+   "query": "ai song",
+   "label": "vt-market-kr ai song",
+   "video_count": 1
+  },
+  {
+   "slug": "music",
+   "query": "music",
+   "label": "music",
+   "video_count": 5
+  }
+ ]
+}

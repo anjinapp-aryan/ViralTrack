@@ -23,6 +23,8 @@ class Capability(str, Enum):
     HASHTAGS = "hashtags"
     AUDIO = "audio"                            # trending sounds / audio
     DERIVED_VELOCITY = "derived_velocity"      # views-per-hour etc. computed from snapshots
+    CONTENT_SIGNALS = "content_signals"        # stored metadata used to classify content (tags, disclosure)
+    DISCOVERY_MARKETS = "discovery_markets"    # which regional collection found an item
     # Ingestion: ask the provider's backend to collect through the official API.
     # Internal-only operations; they may spend platform quota.
     COLLECT_CREATOR = "collect_creator"        # one creator's uploads

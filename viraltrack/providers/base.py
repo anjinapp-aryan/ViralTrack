@@ -20,6 +20,7 @@ from viraltrack.domain import (
     PlatformCapabilities,
     UnsupportedCapability,
 )
+from viraltrack.intelligence.taxonomy import ContentSignals
 
 
 @dataclass(frozen=True)
@@ -120,6 +121,15 @@ class PlatformProvider(ABC):
 
     def get_trending_content(self, region: str | None = None) -> ContentPage:
         self._unsupported(Capability.GLOBAL_TRENDING)
+
+    def get_content_signals(self, content_ids: list[str]) -> dict[str, ContentSignals]:
+        """Stored classification metadata per item (tags, the platform's synthetic-content disclosure,
+        declared creator country, broadcast status). Read-only; never fetches from the platform."""
+        self._unsupported(Capability.CONTENT_SIGNALS)
+
+    def discovery_markets(self) -> dict[str, tuple[str, ...]]:
+        """Item id -> markets (ISO country codes) of the regional collections that found it."""
+        self._unsupported(Capability.DISCOVERY_MARKETS)
 
     # ingestion: internal-only, may spend platform quota --------------------
     def collect_creator(self, creator_ref: str, max_items: int | None = None) -> IngestionResult:

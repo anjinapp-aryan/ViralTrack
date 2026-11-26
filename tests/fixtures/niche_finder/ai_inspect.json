@@ -1,0 +1,433 @@
+{
+ "aiKnMusic01": {
+  "videoId": "aiKnMusic01",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "Amma Magana Haadu | AI music video made with Kling AI #amma #shorts",
+   "publishedAt": "2026-11-20T10:00:00+00:00",
+   "views": 2400000,
+   "durationSeconds": 50,
+   "isShort": true,
+   "language": "kn",
+   "tags": [
+    "emotional",
+    "amma",
+    "kannada"
+   ],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": null,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCkn0000000000000000a1",
+   "title": "Synthetic channel a1",
+   "country": "IN",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "aiKnMusic02": {
+  "videoId": "aiKnMusic02",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "Amma emotional song – AI animated music video #aisong #amma #shorts",
+   "publishedAt": "2026-11-21T10:00:00+00:00",
+   "views": 1300000,
+   "durationSeconds": 58,
+   "isShort": true,
+   "language": "kn",
+   "tags": [
+    "emotional",
+    "mother"
+   ],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": null,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCkn0000000000000000a2",
+   "title": "Synthetic channel a2",
+   "country": "IN",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "aiKnMusic03": {
+  "videoId": "aiKnMusic03",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "ಅಮ್ಮ ನನ್ನ ಜೀವ | cinematic video song #amma #shorts",
+   "publishedAt": "2026-11-22T10:00:00+00:00",
+   "views": 900000,
+   "durationSeconds": 44,
+   "isShort": true,
+   "language": "kn",
+   "tags": [
+    "emotional",
+    "kannada song"
+   ],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": true,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCkn0000000000000000a3",
+   "title": "Synthetic channel a3",
+   "country": "IN",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "aiEnLofi004": {
+  "videoId": "aiEnLofi004",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "Lo-fi beats to study – 1 hour AI generated instrumental (Suno)",
+   "publishedAt": "2026-11-18T10:00:00+00:00",
+   "views": 450000,
+   "durationSeconds": 3600,
+   "isShort": false,
+   "language": "en",
+   "tags": [
+    "lofi",
+    "study"
+   ],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": null,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCen0000000000000000b1",
+   "title": "Synthetic channel b1",
+   "country": "US",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "aiEnFilm005": {
+  "videoId": "aiEnFilm005",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "Dragon kingdom – AI short film with epic background music #aivideo #runway",
+   "publishedAt": "2026-11-19T10:00:00+00:00",
+   "views": 800000,
+   "durationSeconds": 240,
+   "isShort": false,
+   "language": "en",
+   "tags": [
+    "fantasy",
+    "dragon"
+   ],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": null,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCen0000000000000000b2",
+   "title": "Synthetic channel b2",
+   "country": "US",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "aiEnSci0006": {
+  "videoId": "aiEnSci0006",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "Why do cats purr? Science explained | AI generated animation",
+   "publishedAt": "2026-11-17T10:00:00+00:00",
+   "views": 300000,
+   "durationSeconds": 95,
+   "isShort": true,
+   "language": "en",
+   "tags": [
+    "science",
+    "cats"
+   ],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": null,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCgb0000000000000000c1",
+   "title": "Synthetic channel c1",
+   "country": "GB",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "aiKoSong007": {
+  "videoId": "aiKoSong007",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "AI 노래 – 겨울 이야기 #aimusic #aisong",
+   "publishedAt": "2026-11-23T10:00:00+00:00",
+   "views": 120000,
+   "durationSeconds": 170,
+   "isShort": true,
+   "language": "ko",
+   "tags": [],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": null,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCkr0000000000000000d1",
+   "title": "Synthetic channel d1",
+   "country": "KR",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "notAiLive08": {
+  "videoId": "notAiLive08",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "Real singer, no AI used – acoustic cover",
+   "publishedAt": "2026-11-16T10:00:00+00:00",
+   "views": 70000,
+   "durationSeconds": 300,
+   "isShort": false,
+   "language": "en",
+   "tags": [
+    "acoustic"
+   ],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": false,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCen0000000000000000b3",
+   "title": "Synthetic channel b3",
+   "country": "US",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "gameMine009": {
+  "videoId": "gameMine009",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "Minecraft AI generated world #minecraft",
+   "publishedAt": "2026-11-20T12:00:00+00:00",
+   "views": 5000000,
+   "durationSeconds": 600,
+   "isShort": false,
+   "language": "en",
+   "tags": [
+    "minecraft",
+    "gaming"
+   ],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": null,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCen0000000000000000b4",
+   "title": "Synthetic channel b4",
+   "country": "US",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "plainVlog10": {
+  "videoId": "plainVlog10",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "Morning routine vlog",
+   "publishedAt": "2026-11-21T12:00:00+00:00",
+   "views": 60000,
+   "durationSeconds": 600,
+   "isShort": false,
+   "language": "hi",
+   "tags": [],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": false,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCin0000000000000000e1",
+   "title": "Synthetic channel e1",
+   "country": null,
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "bareAiTalk1": {
+  "videoId": "bareAiTalk1",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "AI will change every job – podcast",
+   "publishedAt": "2026-11-15T12:00:00+00:00",
+   "views": 40000,
+   "durationSeconds": 1800,
+   "isShort": false,
+   "language": "en",
+   "tags": [
+    "podcast"
+   ],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": null,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCen0000000000000000b5",
+   "title": "Synthetic channel b5",
+   "country": "US",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "tutSunoAi12": {
+  "videoId": "tutSunoAi12",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "How to make AI songs with Suno AI – full tutorial",
+   "publishedAt": "2026-11-14T12:00:00+00:00",
+   "views": 35000,
+   "durationSeconds": 900,
+   "isShort": false,
+   "language": "en",
+   "tags": [
+    "tutorial"
+   ],
+   "thumbnail": null,
+   "liveContent": "none",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": null,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCin0000000000000000e2",
+   "title": "Synthetic channel e2",
+   "country": "IN",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ },
+ "liveRadio13": {
+  "videoId": "liveRadio13",
+  "found": true,
+  "source": "db",
+  "fetchedFromApi": false,
+  "quotaUnits": 0,
+  "outlierScore": 8.0,
+  "viewsPerSubscriber": 12.5,
+  "viralScore": 99.0,
+  "video": {
+   "title": "AI music radio 24/7 #aimusic #lofi",
+   "publishedAt": "2026-11-24T12:00:00+00:00",
+   "views": 20000,
+   "durationSeconds": null,
+   "isShort": false,
+   "language": "en",
+   "tags": [],
+   "thumbnail": null,
+   "liveContent": "live",
+   "firstSeenAt": "2026-11-24T09:00:00+00:00",
+   "containsSyntheticMedia": null,
+   "outlierScore": 8.0
+  },
+  "channel": {
+   "channelId": "UCen0000000000000000b6",
+   "title": "Synthetic channel b6",
+   "country": "US",
+   "subscribers": 50000,
+   "tracked": false
+  }
+ }
+}

@@ -1,6 +1,432 @@
 {
   "components": {
     "schemas": {
+      "AIClassificationOut": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "enum": [
+              "AI_MUSIC_VIDEO",
+              "AI_MUSIC_AUDIO",
+              "AI_VIDEO_WITH_MUSIC",
+              "AI_NORMAL_VIDEO",
+              "NORMAL_NON_AI",
+              "UNKNOWN"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "category_reason": {
+            "title": "Category Reason",
+            "type": "string"
+          },
+          "classified_at": {
+            "format": "date-time",
+            "title": "Classified At",
+            "type": "string"
+          },
+          "classifier_version": {
+            "title": "Classifier Version",
+            "type": "string"
+          },
+          "confidence": {
+            "description": "a label, not a probability; no calibrated model is used",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "none"
+            ],
+            "title": "Confidence",
+            "type": "string"
+          },
+          "evidence": {
+            "description": "each piece of evidence found, in words",
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "evidence_sources": {
+            "description": "platform_disclosure, title, creator_tags, platform_category",
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Sources",
+            "type": "array"
+          },
+          "reason": {
+            "description": "why this status, in words",
+            "title": "Reason",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "CONFIRMED_AI",
+              "LIKELY_AI",
+              "POSSIBLY_AI",
+              "NOT_AI",
+              "UNKNOWN"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "confidence",
+          "category",
+          "reason",
+          "category_reason",
+          "evidence_sources",
+          "evidence",
+          "classifier_version",
+          "classified_at"
+        ],
+        "title": "AIClassificationOut",
+        "type": "object"
+      },
+      "AICountries": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "enum": [
+              "creator",
+              "discovery"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CountryRow"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/CorpusMeta"
+          }
+        },
+        "required": [
+          "meta",
+          "basis",
+          "data"
+        ],
+        "title": "AICountries",
+        "type": "object"
+      },
+      "AIOpportunities": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "enum": [
+              "creator",
+              "discovery"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Opportunity"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/CorpusMeta"
+          },
+          "min_items": {
+            "title": "Min Items",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "meta",
+          "basis",
+          "min_items",
+          "data"
+        ],
+        "title": "AIOpportunities",
+        "type": "object"
+      },
+      "AIPage": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AIVideo"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/AIPageMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "AIPage",
+        "type": "object"
+      },
+      "AIPageMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "candidate_limit": {
+            "title": "Candidate Limit",
+            "type": "integer"
+          },
+          "candidate_limit_reached": {
+            "description": "true when more items may exist than were examined",
+            "title": "Candidate Limit Reached",
+            "type": "boolean"
+          },
+          "candidates_examined": {
+            "description": "collected items read for this answer",
+            "title": "Candidates Examined",
+            "type": "integer"
+          },
+          "classifier_version": {
+            "title": "Classifier Version",
+            "type": "string"
+          },
+          "collected_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "earliest time the data source first stored an item",
+            "title": "Collected From"
+          },
+          "collected_to": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "latest time the data source first stored an item",
+            "title": "Collected To"
+          },
+          "data_origin": {
+            "enum": [
+              "real_provider_data",
+              "demo",
+              "test"
+            ],
+            "title": "Data Origin",
+            "type": "string"
+          },
+          "demo": {
+            "title": "Demo",
+            "type": "boolean"
+          },
+          "excluded_gaming": {
+            "description": "items left out because they are Gaming content",
+            "title": "Excluded Gaming",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "platform": {
+            "enum": [
+              "youtube",
+              "instagram",
+              "tiktok"
+            ],
+            "title": "Platform",
+            "type": "string"
+          },
+          "returned": {
+            "title": "Returned",
+            "type": "integer"
+          },
+          "signals_missing": {
+            "description": "items whose stored tags and disclosure could not be read",
+            "title": "Signals Missing",
+            "type": "integer"
+          },
+          "sort": {
+            "enum": [
+              "views",
+              "published_at"
+            ],
+            "title": "Sort",
+            "type": "string"
+          },
+          "total": {
+            "description": "items matching every filter among those examined",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "platform",
+          "data_origin",
+          "demo",
+          "period",
+          "candidates_examined",
+          "candidate_limit",
+          "candidate_limit_reached",
+          "excluded_gaming",
+          "signals_missing",
+          "collected_from",
+          "collected_to",
+          "classifier_version",
+          "notes",
+          "sort",
+          "page",
+          "page_size",
+          "returned",
+          "total",
+          "has_more"
+        ],
+        "title": "AIPageMeta",
+        "type": "object"
+      },
+      "AISummary": {
+        "additionalProperties": false,
+        "properties": {
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Category",
+            "type": "array"
+          },
+          "by_confidence": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Confidence",
+            "type": "array"
+          },
+          "by_creator_country": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Creator Country",
+            "type": "array"
+          },
+          "by_discovery_country": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Discovery Country",
+            "type": "array"
+          },
+          "by_format": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Format",
+            "type": "array"
+          },
+          "by_language": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Language",
+            "type": "array"
+          },
+          "by_status": {
+            "description": "all examined items except excluded ones, by AI status",
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Status",
+            "type": "array"
+          },
+          "matching": {
+            "description": "items matching every filter",
+            "title": "Matching",
+            "type": "integer"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/CorpusMeta"
+          },
+          "recent": {
+            "description": "the most recently published matching items",
+            "items": {
+              "$ref": "#/components/schemas/AIVideo"
+            },
+            "title": "Recent",
+            "type": "array"
+          }
+        },
+        "required": [
+          "meta",
+          "matching",
+          "by_status",
+          "by_category",
+          "by_format",
+          "by_confidence",
+          "by_creator_country",
+          "by_discovery_country",
+          "by_language",
+          "recent"
+        ],
+        "title": "AISummary",
+        "type": "object"
+      },
+      "AIVideo": {
+        "additionalProperties": false,
+        "properties": {
+          "classification": {
+            "$ref": "#/components/schemas/AIClassificationOut"
+          },
+          "country": {
+            "$ref": "#/components/schemas/CountryOut"
+          },
+          "format": {
+            "$ref": "#/components/schemas/FormatOut"
+          },
+          "video": {
+            "$ref": "#/components/schemas/Video"
+          }
+        },
+        "required": [
+          "video",
+          "classification",
+          "format",
+          "country"
+        ],
+        "title": "AIVideo",
+        "type": "object"
+      },
       "CapabilitiesOut": {
         "additionalProperties": false,
         "properties": {
@@ -104,6 +530,426 @@
           "required"
         ],
         "title": "CheckOut",
+        "type": "object"
+      },
+      "CorpusMeta": {
+        "additionalProperties": false,
+        "properties": {
+          "candidate_limit": {
+            "title": "Candidate Limit",
+            "type": "integer"
+          },
+          "candidate_limit_reached": {
+            "description": "true when more items may exist than were examined",
+            "title": "Candidate Limit Reached",
+            "type": "boolean"
+          },
+          "candidates_examined": {
+            "description": "collected items read for this answer",
+            "title": "Candidates Examined",
+            "type": "integer"
+          },
+          "classifier_version": {
+            "title": "Classifier Version",
+            "type": "string"
+          },
+          "collected_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "earliest time the data source first stored an item",
+            "title": "Collected From"
+          },
+          "collected_to": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "latest time the data source first stored an item",
+            "title": "Collected To"
+          },
+          "data_origin": {
+            "enum": [
+              "real_provider_data",
+              "demo",
+              "test"
+            ],
+            "title": "Data Origin",
+            "type": "string"
+          },
+          "demo": {
+            "title": "Demo",
+            "type": "boolean"
+          },
+          "excluded_gaming": {
+            "description": "items left out because they are Gaming content",
+            "title": "Excluded Gaming",
+            "type": "integer"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "period": {
+            "title": "Period",
+            "type": "string"
+          },
+          "platform": {
+            "enum": [
+              "youtube",
+              "instagram",
+              "tiktok"
+            ],
+            "title": "Platform",
+            "type": "string"
+          },
+          "signals_missing": {
+            "description": "items whose stored tags and disclosure could not be read",
+            "title": "Signals Missing",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "platform",
+          "data_origin",
+          "demo",
+          "period",
+          "candidates_examined",
+          "candidate_limit",
+          "candidate_limit_reached",
+          "excluded_gaming",
+          "signals_missing",
+          "collected_from",
+          "collected_to",
+          "classifier_version",
+          "notes"
+        ],
+        "title": "CorpusMeta",
+        "type": "object"
+      },
+      "Count": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "count"
+        ],
+        "title": "Count",
+        "type": "object"
+      },
+      "CountryOut": {
+        "additionalProperties": false,
+        "properties": {
+          "creator_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the country the creator declared on the channel",
+            "title": "Creator Country"
+          },
+          "creator_country_confidence": {
+            "description": "medium: self-declared and unverified; none: not declared",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "none"
+            ],
+            "title": "Creator Country Confidence",
+            "type": "string"
+          },
+          "creator_country_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creator Country Source"
+          },
+          "discovery_countries": {
+            "description": "markets of ViralTrack's own regional collections that found the item; empty when none",
+            "items": {
+              "type": "string"
+            },
+            "title": "Discovery Countries",
+            "type": "array"
+          },
+          "discovery_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discovery Source"
+          },
+          "language_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language Code"
+          },
+          "language_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the data source stores the declared audio or metadata language, else its own text detection, without saying which",
+            "title": "Language Source"
+          }
+        },
+        "required": [
+          "discovery_countries",
+          "discovery_source",
+          "creator_country",
+          "creator_country_source",
+          "creator_country_confidence",
+          "language_code",
+          "language_source"
+        ],
+        "title": "CountryOut",
+        "type": "object"
+      },
+      "CountryRow": {
+        "additionalProperties": false,
+        "properties": {
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Category",
+            "type": "array"
+          },
+          "by_format": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Format",
+            "type": "array"
+          },
+          "by_language": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Language",
+            "type": "array"
+          },
+          "by_published_day": {
+            "items": {
+              "$ref": "#/components/schemas/Count"
+            },
+            "title": "By Published Day",
+            "type": "array"
+          },
+          "country": {
+            "description": "ISO 3166-1 alpha-2 code, or 'unknown'",
+            "title": "Country",
+            "type": "string"
+          },
+          "items": {
+            "title": "Items",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "country",
+          "items",
+          "by_category",
+          "by_format",
+          "by_language",
+          "by_published_day"
+        ],
+        "title": "CountryRow",
+        "type": "object"
+      },
+      "CreativeBrief": {
+        "additionalProperties": false,
+        "properties": {
+          "audience_hypothesis": {
+            "title": "Audience Hypothesis",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "AI_MUSIC_VIDEO",
+              "AI_MUSIC_AUDIO",
+              "AI_VIDEO_WITH_MUSIC",
+              "AI_NORMAL_VIDEO",
+              "NORMAL_NON_AI",
+              "UNKNOWN"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "country_basis": {
+            "enum": [
+              "creator",
+              "discovery"
+            ],
+            "title": "Country Basis",
+            "type": "string"
+          },
+          "format_type": {
+            "enum": [
+              "short_form",
+              "long_form",
+              "live",
+              "unknown"
+            ],
+            "title": "Format Type",
+            "type": "string"
+          },
+          "generated_by": {
+            "const": "template",
+            "title": "Generated By",
+            "type": "string"
+          },
+          "hook_concept": {
+            "title": "Hook Concept",
+            "type": "string"
+          },
+          "language_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language Code"
+          },
+          "music_direction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Music Direction"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "opportunity_title": {
+            "title": "Opportunity Title",
+            "type": "string"
+          },
+          "original_creative_angle": {
+            "title": "Original Creative Angle",
+            "type": "string"
+          },
+          "platform_recommendations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Platform Recommendations",
+            "type": "array"
+          },
+          "rights_checklist": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rights Checklist",
+            "type": "array"
+          },
+          "story_outline": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Story Outline",
+            "type": "array"
+          },
+          "suggested_duration": {
+            "title": "Suggested Duration",
+            "type": "string"
+          },
+          "theme": {
+            "title": "Theme",
+            "type": "string"
+          },
+          "visual_direction": {
+            "title": "Visual Direction",
+            "type": "string"
+          }
+        },
+        "required": [
+          "opportunity_title",
+          "country",
+          "country_basis",
+          "language_code",
+          "category",
+          "format_type",
+          "audience_hypothesis",
+          "theme",
+          "original_creative_angle",
+          "suggested_duration",
+          "hook_concept",
+          "story_outline",
+          "music_direction",
+          "visual_direction",
+          "platform_recommendations",
+          "rights_checklist",
+          "generated_by",
+          "note"
+        ],
+        "title": "CreativeBrief",
         "type": "object"
       },
       "CreatorDetail": {
@@ -315,6 +1161,98 @@
         "title": "ErrorOut",
         "type": "object"
       },
+      "EvidenceItem": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "enum": [
+              "AI_MUSIC_VIDEO",
+              "AI_MUSIC_AUDIO",
+              "AI_VIDEO_WITH_MUSIC",
+              "AI_NORMAL_VIDEO",
+              "NORMAL_NON_AI",
+              "UNKNOWN"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "creator_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creator Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "status": {
+            "enum": [
+              "CONFIRMED_AI",
+              "LIKELY_AI",
+              "POSSIBLY_AI",
+              "NOT_AI",
+              "UNKNOWN"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "views": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MetricValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "title",
+          "creator_name",
+          "published_at",
+          "views",
+          "status",
+          "category"
+        ],
+        "title": "EvidenceItem",
+        "type": "object"
+      },
       "FilterOut": {
         "additionalProperties": false,
         "properties": {
@@ -395,6 +1333,55 @@
           "applies_to"
         ],
         "title": "FilterOut",
+        "type": "object"
+      },
+      "FormatOut": {
+        "additionalProperties": false,
+        "properties": {
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "format_confidence": {
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "none"
+            ],
+            "title": "Format Confidence",
+            "type": "string"
+          },
+          "format_type": {
+            "description": "a ViralTrack duration tag (short_form: 1 to 180 s), not the platform's Shorts flag",
+            "enum": [
+              "short_form",
+              "long_form",
+              "live",
+              "unknown"
+            ],
+            "title": "Format Type",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "format_type",
+          "format_confidence",
+          "reason",
+          "duration_seconds"
+        ],
+        "title": "FormatOut",
         "type": "object"
       },
       "HealthOut": {
@@ -580,6 +1567,121 @@
           "note"
         ],
         "title": "MetricValue",
+        "type": "object"
+      },
+      "Opportunity": {
+        "additionalProperties": false,
+        "properties": {
+          "brief": {
+            "$ref": "#/components/schemas/CreativeBrief"
+          },
+          "category": {
+            "enum": [
+              "AI_MUSIC_VIDEO",
+              "AI_MUSIC_AUDIO",
+              "AI_VIDEO_WITH_MUSIC",
+              "AI_NORMAL_VIDEO",
+              "NORMAL_NON_AI",
+              "UNKNOWN"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "country_basis": {
+            "enum": [
+              "creator",
+              "discovery"
+            ],
+            "title": "Country Basis",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "format_type": {
+            "enum": [
+              "short_form",
+              "long_form",
+              "live",
+              "unknown"
+            ],
+            "title": "Format Type",
+            "type": "string"
+          },
+          "item_count": {
+            "description": "collected items that support it; the only ordering input",
+            "title": "Item Count",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "language_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language Code"
+          },
+          "newest_published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Newest Published At"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "themes": {
+            "items": {
+              "$ref": "#/components/schemas/Theme"
+            },
+            "title": "Themes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "category",
+          "format_type",
+          "language_code",
+          "country",
+          "country_basis",
+          "item_count",
+          "newest_published_at",
+          "themes",
+          "summary",
+          "evidence",
+          "brief"
+        ],
+        "title": "Opportunity",
         "type": "object"
       },
       "PageMeta": {
@@ -840,6 +1942,26 @@
         "title": "SortOut",
         "type": "object"
       },
+      "Theme": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "description": "supporting items that use the term",
+            "title": "Items",
+            "type": "integer"
+          },
+          "term": {
+            "title": "Term",
+            "type": "string"
+          }
+        },
+        "required": [
+          "term",
+          "items"
+        ],
+        "title": "Theme",
+        "type": "object"
+      },
       "Video": {
         "additionalProperties": false,
         "properties": {
@@ -1086,6 +2208,989 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/ai/content": {
+      "get": {
+        "operationId": "ai_content_api_v1_ai_content_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": "30d",
+              "pattern": "^(all|[1-9][0-9]{0,3}[hd])$",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "description": "AI statuses; default CONFIRMED_AI and LIKELY_AI",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "CONFIRMED_AI",
+                      "LIKELY_AI",
+                      "POSSIBLY_AI",
+                      "NOT_AI",
+                      "UNKNOWN"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "AI statuses; default CONFIRMED_AI and LIKELY_AI",
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "AI_MUSIC_VIDEO",
+                      "AI_MUSIC_AUDIO",
+                      "AI_VIDEO_WITH_MUSIC",
+                      "AI_NORMAL_VIDEO",
+                      "NORMAL_NON_AI",
+                      "UNKNOWN"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "short_form",
+                      "long_form",
+                      "live",
+                      "unknown"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Format"
+            }
+          },
+          {
+            "description": "ISO codes or 'unknown'",
+            "in": "query",
+            "name": "creator_country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO codes or 'unknown'",
+              "title": "Creator Country"
+            }
+          },
+          {
+            "description": "ISO codes or 'unknown'",
+            "in": "query",
+            "name": "discovery_country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO codes or 'unknown'",
+              "title": "Discovery Country"
+            }
+          },
+          {
+            "description": "language codes or 'unknown'",
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "language codes or 'unknown'",
+              "title": "Language"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "views",
+              "enum": [
+                "views",
+                "published_at"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "youtube",
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "title": "Platform",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Invalid or unsupported request"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider answered with something unusable"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider timed out"
+          }
+        },
+        "summary": "Collected videos with their AI classification, format and country dimensions.",
+        "tags": [
+          "ai-intelligence"
+        ]
+      }
+    },
+    "/api/v1/ai/countries": {
+      "get": {
+        "operationId": "ai_countries_api_v1_ai_countries_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "basis",
+            "required": false,
+            "schema": {
+              "default": "creator",
+              "enum": [
+                "creator",
+                "discovery"
+              ],
+              "title": "Basis",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": "30d",
+              "pattern": "^(all|[1-9][0-9]{0,3}[hd])$",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "description": "AI statuses; default CONFIRMED_AI and LIKELY_AI",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "CONFIRMED_AI",
+                      "LIKELY_AI",
+                      "POSSIBLY_AI",
+                      "NOT_AI",
+                      "UNKNOWN"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "AI statuses; default CONFIRMED_AI and LIKELY_AI",
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "AI_MUSIC_VIDEO",
+                      "AI_MUSIC_AUDIO",
+                      "AI_VIDEO_WITH_MUSIC",
+                      "AI_NORMAL_VIDEO",
+                      "NORMAL_NON_AI",
+                      "UNKNOWN"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "short_form",
+                      "long_form",
+                      "live",
+                      "unknown"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Format"
+            }
+          },
+          {
+            "description": "limit to these ISO codes or 'unknown'",
+            "in": "query",
+            "name": "country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "limit to these ISO codes or 'unknown'",
+              "title": "Country"
+            }
+          },
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "youtube",
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "title": "Platform",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AICountries"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Invalid or unsupported request"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider answered with something unusable"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider timed out"
+          }
+        },
+        "summary": "Per-country breakdown of the classified corpus (creator-declared or discovery market).",
+        "tags": [
+          "ai-intelligence"
+        ]
+      }
+    },
+    "/api/v1/ai/opportunities": {
+      "get": {
+        "operationId": "ai_opportunities_api_v1_ai_opportunities_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "basis",
+            "required": false,
+            "schema": {
+              "default": "creator",
+              "enum": [
+                "creator",
+                "discovery"
+              ],
+              "title": "Basis",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": "30d",
+              "pattern": "^(all|[1-9][0-9]{0,3}[hd])$",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "description": "AI statuses; default CONFIRMED_AI and LIKELY_AI",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "CONFIRMED_AI",
+                      "LIKELY_AI",
+                      "POSSIBLY_AI",
+                      "NOT_AI",
+                      "UNKNOWN"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "AI statuses; default CONFIRMED_AI and LIKELY_AI",
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "AI_MUSIC_VIDEO",
+                      "AI_MUSIC_AUDIO",
+                      "AI_VIDEO_WITH_MUSIC",
+                      "AI_NORMAL_VIDEO",
+                      "NORMAL_NON_AI",
+                      "UNKNOWN"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "short_form",
+                      "long_form",
+                      "live",
+                      "unknown"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Format"
+            }
+          },
+          {
+            "in": "query",
+            "name": "creator_country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Creator Country"
+            }
+          },
+          {
+            "in": "query",
+            "name": "discovery_country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Discovery Country"
+            }
+          },
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_items",
+            "required": false,
+            "schema": {
+              "default": 3,
+              "maximum": 50,
+              "minimum": 2,
+              "title": "Min Items",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "youtube",
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "title": "Platform",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIOpportunities"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Invalid or unsupported request"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider answered with something unusable"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider timed out"
+          }
+        },
+        "summary": "Groups of AI content in the corpus, with evidence and an original creative brief for each.",
+        "tags": [
+          "ai-intelligence"
+        ]
+      }
+    },
+    "/api/v1/ai/summary": {
+      "get": {
+        "operationId": "ai_summary_api_v1_ai_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": "30d",
+              "pattern": "^(all|[1-9][0-9]{0,3}[hd])$",
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          {
+            "description": "AI statuses; default CONFIRMED_AI and LIKELY_AI",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "CONFIRMED_AI",
+                      "LIKELY_AI",
+                      "POSSIBLY_AI",
+                      "NOT_AI",
+                      "UNKNOWN"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "AI statuses; default CONFIRMED_AI and LIKELY_AI",
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "AI_MUSIC_VIDEO",
+                      "AI_MUSIC_AUDIO",
+                      "AI_VIDEO_WITH_MUSIC",
+                      "AI_NORMAL_VIDEO",
+                      "NORMAL_NON_AI",
+                      "UNKNOWN"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "short_form",
+                      "long_form",
+                      "live",
+                      "unknown"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Format"
+            }
+          },
+          {
+            "in": "query",
+            "name": "creator_country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Creator Country"
+            }
+          },
+          {
+            "in": "query",
+            "name": "discovery_country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Discovery Country"
+            }
+          },
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "youtube",
+              "enum": [
+                "youtube",
+                "instagram",
+                "tiktok"
+              ],
+              "title": "Platform",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AISummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Invalid or unsupported request"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider answered with something unusable"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "The provider timed out"
+          }
+        },
+        "summary": "Counts of the classified corpus by status, category, format, confidence, country and language.",
+        "tags": [
+          "ai-intelligence"
+        ]
+      }
+    },
     "/api/v1/capabilities": {
       "get": {
         "operationId": "capabilities_api_v1_capabilities_get",

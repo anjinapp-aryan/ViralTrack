@@ -25,7 +25,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from viraltrack.api import guard, schemas, serialize
+from viraltrack.api import ai, guard, schemas, serialize
 from viraltrack.api.settings import ApiSettings, load_api_settings
 from viraltrack.config import Settings, load_settings
 from viraltrack.domain import (
@@ -576,6 +576,10 @@ def create_app(
         result = replace(result, notes=(CREATOR_VIDEOS_NOTE, *result.notes))
         return video_page(result, page, page_size, window, fetched, "published_at", CREATOR_CONTENT_WINDOW)
 
+
+    # ---- AI content intelligence ----
+
+    ai.install(app, provider_for, origin, ERRORS)
     return app
 
 
